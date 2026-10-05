@@ -13,7 +13,7 @@ export const SCOPE_COLORS: Record<Scope | 'memo', string> = {
 export function scopeColor(scope: Scope): string {
   if (typeof window === 'undefined') return '#888';
   const v = getComputedStyle(document.documentElement).getPropertyValue(`--s${scope}`).trim();
-  return v || ['#b23a25', '#f07f1a', '#f2b705'][scope - 1];
+  return v || ['#1e4e8c', '#5b8fc7', '#a3aeba'][scope - 1];
 }
 
 export function cssVar(name: string, fallback: string): string {
