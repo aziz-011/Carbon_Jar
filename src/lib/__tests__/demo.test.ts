@@ -35,3 +35,12 @@ describe('dossier de démonstration', () => {
     expect(b.scope2Location).toBeLessThan(a.scope2Location);
   });
 });
+
+describe('conformité', () => {
+  it('le dossier de démonstration satisfait toutes les exigences', async () => {
+    const { complianceChecks } = await import('../compliance');
+    const checks = complianceChecks(s, inv(2025), inv(2024));
+    expect(checks.length).toBe(11);
+    expect(checks.filter((c) => !c.ok).map((c) => c.id)).toEqual([]);
+  });
+});

@@ -4,6 +4,7 @@ import { categoriesOfScope, getCategory } from '../data/categories';
 import { GWP_SET_LABELS } from '../data/gwp';
 import type { DataQuality, Scope } from '../domain/types';
 import { carbonCostExposure, intensityRatio } from '../lib/calc';
+import { complianceChecks } from '../lib/compliance';
 import { downloadFile, isEmbedded } from '../lib/csv';
 import { fmt, fmtMoney, fmtPct } from '../lib/format';
 import { useStore } from '../state/store';
@@ -19,19 +20,7 @@ export function Report() {
   const qualityShare = (q: DataQuality) => (inv.totalLocation ? inv.results.filter((r) => r.activity.quality === q).reduce((s, r) => s + r.kgCO2e / 1000, 0) / inv.totalLocation : 0);
   const withEvidence = inv.results.length ? inv.results.filter((r) => r.activity.evidence).length / inv.results.length : 0;
 
-  const checks: Array<[string, boolean, string]> = [
-    ['Périmètre organisationnel et approche de consolidation décrits', state.entities.length > 0, approach[1]],
-    ['Scopes 1 et 2 déclarés séparément', inv.scope1 > 0 && inv.scope2Location > 0, `${fmt(inv.scope1)} t / ${fmt(inv.scope2Location)} t`],
-    ['Ventilation des Scopes 1 et 2 par gaz', Object.keys(inv.byGasScope12).length > 0, `${Object.keys(inv.byGasScope12).length} gaz`],
-    ['Scope 2 en double reporting (location / market)', inv.scope2Location > 0, `${fmt(inv.scope2Location)} / ${fmt(inv.scope2Market)} t`],
-    ['CO2 biogénique déclaré séparément', true, `${fmt(inv.biogenicT)} t`],
-    ['Année de base et profil historique', base.results.length > 0, String(org.baseYear)],
-    ['Source des PRG indiquée', true, org.gwpSet],
-    ['Exclusions documentées et justifiées', org.exclusions.trim().length > 0, org.exclusions ? 'oui' : 'à compléter'],
-    ['Piste d’audit : justificatifs rattachés', withEvidence >= 0.8, fmtPct(withEvidence)],
-    ['Crédits carbone non soustraits des émissions brutes', true, `${fmt(org.offsetsTco2e)} t déclarées à part`],
-    ['Scope 3 (optionnel, exigé par la CSRD si matériel)', inv.scope3 > 0, `${fmt(inv.scope3)} t`],
-  ];
+  const checks = complianceChecks(state, inv, base);
 
   const exportJson = () => downloadFile(`carbon-jar-${org.reportingYear}.json`, JSON.stringify(state, null, 2), 'application/json');
 
@@ -53,11 +42,11 @@ export function Report() {
       <Card icon="checks" title="Liste de contrôle de conformité">
         <table>
           <tbody>
-            {checks.map(([label, ok, detail]) => (
-              <tr key={label}>
-                <td style={{ width: 28 }}>{ok ? <Icon name="checkCircle" size={17} className="ok-ico" /> : <Icon name="alert" size={17} className="warn-ico" />}</td>
-                <td>{label}</td>
-                <td className="right muted">{detail}</td>
+            {checks.map((c) => (
+              <tr key={c.id}>
+                <td style={{ width: 28 }}>{c.ok ? <Icon name="checkCircle" size={17} className="ok-ico" /> : <Icon name="alert" size={17} className="warn-ico" />}</td>
+                <td>{c.label}</td>
+                <td className="right muted">{c.detail}</td>
               </tr>
             ))}
           </tbody>

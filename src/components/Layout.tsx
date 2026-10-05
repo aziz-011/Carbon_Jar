@@ -81,6 +81,7 @@ export function Layout({ children }: { children: ReactNode }) {
         { to: '/portail/resultats', label: 'Mes résultats', icon: 'chart', locked: !tabs.results },
         { to: '/portail/economies', label: 'Économies & conseils', icon: 'trendDown', locked: !tabs.results },
         { to: '/portail/flotte', label: 'Ma flotte', icon: 'car', hidden: !tabs.fleet, badge: state.vehicles.length, soft: true },
+        { to: '/portail/conformite', label: 'Conformité', icon: 'shield', locked: !tabs.results },
         { to: '/portail/questionnaire', label: 'Questionnaire ESG', icon: 'users' },
         { to: '/portail/rapport', label: 'Mon rapport ESG', icon: 'report', locked: !tabs.report },
       ],

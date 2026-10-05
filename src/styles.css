@@ -603,3 +603,17 @@ ol.steps { list-style: none; padding: 0; margin: 0; }
 .check-item.attention { background: var(--warn-soft); }
 .check-item.bloquant { background: var(--danger-soft); }
 .check-item .icon { margin-top: 2px; }
+
+/* ─── Conformité (portail client) ─── */
+.compliance { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.compliance li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+.compliance li.todo { background: color-mix(in srgb, var(--warn) 10%, var(--surface)); }
+.compliance li > svg { align-self: start; margin-top: 2px; }
+.compliance li .badge { white-space: nowrap; }
+@media (max-width: 700px) { .compliance li { grid-template-columns: auto minmax(0, 1fr); } .compliance li > :last-child:not(div) { grid-column: 2; justify-self: start; } }
+.quality-bars { display: grid; gap: 12px; margin-top: 8px; }
+.quality-bars .bar { margin-top: 5px; }
+.quality-bars .q1 { background: var(--forest); }
+.quality-bars .q2 { background: var(--accent); }
+.quality-bars .q3 { background: var(--s2, #b8862b); }
+.quality-bars .q4 { background: var(--warn); }

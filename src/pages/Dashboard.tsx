@@ -6,11 +6,10 @@ import { Steps } from '../components/progress';
 import { workflowSteps } from '../lib/progress';
 import { Callout, Card, PageHead, ScopeBadge, Stat, Tabs, cssVar, scopeColor } from '../components/ui';
 import { getCategory } from '../data/categories';
-import { GRID_ZONES } from '../data/emissionFactors';
 import type { CategoryId, Scope } from '../domain/types';
 import { carbonCostExposure, intensityRatio } from '../lib/calc';
 import { fmt, fmtMWh, fmtMoney, fmtPct, fmtT } from '../lib/format';
-import { qualityAdvice, recommend } from '../lib/recommendations';
+import { qualityAdvice } from '../lib/recommendations';
 import { useStore } from '../state/store';
 
 type Lens = 'emissions' | 'energy' | 'cost';
@@ -59,12 +58,6 @@ export function Dashboard() {
   });
 
   const topSources = [...inv.results].sort((a, b) => b.kgCO2e - a.kgCO2e).slice(0, 6);
-  const mainZone = state.entities[0]?.country ?? 'TN';
-  const gridFactor = GRID_ZONES.find((z) => z.code === mainZone)?.value ?? 0.58;
-  const allRecos = recommend(inv, { gridFactor, country: mainZone });
-  const recos = allRecos.slice(0, 5);
-  const potentialLow = allRecos.reduce((s, r) => s + r.reductionT[0], 0);
-  const potentialHigh = allRecos.reduce((s, r) => s + r.reductionT[1], 0);
   const advice = qualityAdvice(inv, { exclusions: org.exclusions, hasBaseYearData: base.results.length > 0, offsetsT: org.offsetsTco2e });
   const share = (v: number) => (total > 0 ? v / total : 0);
   const axis = cssVar('--muted', '#888');
@@ -139,38 +132,6 @@ export function Dashboard() {
         />
       </div>
 
-      {recos.length > 0 && (
-        <Card
-          title="Solutions pour réduire vos émissions"
-          actions={<Link to="/conseils">Voir les {allRecos.length} leviers et simuler le plan →</Link>}
-        >
-          <p className="muted small">
-            Calculées à partir de vos résultats {org.reportingYear} : potentiel cumulé de {fmt(potentialLow)} à {fmt(potentialHigh)} t CO2e/an
-            {total > 0 && ` (${fmtPct(potentialLow / total)} à ${fmtPct(Math.min(1, potentialHigh / total))} du total ; les leviers sur un même poste ne s’additionnent pas entièrement)`}.
-          </p>
-          <div className="solutions">
-            {recos.map((r, i) => (
-              <div key={r.id} className="solution">
-                <div className="row">
-                  <span className="rank">{i + 1}</span>
-                  <ScopeBadge scope={r.scope} />
-                  <strong>{r.title}</strong>
-                </div>
-                <div className="row small" style={{ margin: '6px 0' }}>
-                  <span className="badge ok">−{fmt(r.reductionT[0])} à −{fmt(r.reductionT[1])} t CO2e/an</span>
-                  {r.energySavedMWh[1] > 0 && <span className="badge neutral">−{fmt(r.energySavedMWh[1])} MWh max</span>}
-                  {r.costSaved[1] > 0 && <span className="badge neutral">jusqu’à {fmtMoney(r.costSaved[1], org.currency)}/an</span>}
-                </div>
-                <ul className="clean small">
-                  {r.actions.slice(0, 2).map((a) => (
-                    <li key={a}>{a}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
 
       <div className="grid g2">
         <Card icon="layers" title="Répartition par scope" actions={<Tabs value={lens} onChange={setLens} tabs={[['emissions', 'CO2e'], ['energy', 'Énergie'], ['cost', 'Coût']]} />}>
