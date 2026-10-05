@@ -121,7 +121,7 @@ export function Targets() {
                   <Tooltip formatter={(v: number) => `${fmt(v, 3)} ${unit}`} />
                   <Legend />
                   <Line type="linear" dataKey="trajectoire" stroke={cssVar('--muted', '#888')} strokeDasharray="5 4" dot={false} connectNulls />
-                  <Scatter dataKey="réel" fill={cssVar('--accent', '#1f7a5c')} />
+                  <Scatter dataKey="réel" fill={cssVar('--accent', '#2b4c3f')} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

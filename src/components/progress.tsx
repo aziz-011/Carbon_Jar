@@ -37,7 +37,7 @@ export function ProgressRing({ value, label, size = 132 }: { value: number; labe
     <div className="ring" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={10} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--accent)" strokeWidth={10} strokeLinecap="round" strokeDasharray={`${c * v} ${c}`} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--ring, var(--positive))" strokeWidth={10} strokeLinecap="round" strokeDasharray={`${c * v} ${c}`} />
       </svg>
       <div className="ring-label">
         <b>{Math.round(v * 100)} %</b>

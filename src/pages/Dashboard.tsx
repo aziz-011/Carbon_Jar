@@ -110,7 +110,7 @@ export function Dashboard() {
           accent="main"
           icon="cloud" label="Émissions totales (S1+S2+S3)"
           value={fmtT(total)}
-          sub={delta !== undefined ? `${delta <= 0 ? '▼' : '▲'} ${fmtPct(Math.abs(delta), 1)} vs ${org.baseYear}` : `Scope 2 ${method === 'location' ? 'location' : 'market'}-based`}
+          sub={delta !== undefined ? <span className={delta <= 0 ? 'pos' : 'neg'}>{delta <= 0 ? '▼' : '▲'} {fmtPct(Math.abs(delta), 1)} vs {org.baseYear}</span> : `Scope 2 ${method === 'location' ? 'location' : 'market'}-based`}
         />
         <Stat icon="zap" label="Énergie consommée" value={fmtMWh(inv.energyMWh)} sub={`${fmt(inv.energyByScope[1])} MWh combustibles · ${fmt(inv.energyByScope[2])} MWh achetés`} />
         <Stat icon="briefcase" label="Dépenses associées" value={fmtMoney(inv.cost, org.currency)} sub={inv.costEstimatedShare > 0 ? `dont ${fmtPct(inv.costEstimatedShare)} estimés` : 'coûts réels saisis'} />

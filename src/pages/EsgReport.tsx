@@ -19,7 +19,7 @@ import { useStore } from '../state/store';
 import { APPROACHES } from './Boundary';
 
 /** Couleurs du document imprimé (indépendantes du thème de l'écran). */
-const PAPER = { s1: '#b45a37', s2: '#b8862b', s3: '#3f6e8c', ink: '#0f2a20', muted: '#5b6b62', rule: '#e6dece', forest: '#064e3b' };
+const PAPER = { s1: '#2b4c3f', s2: '#c49a45', s3: '#7a8f99', ink: '#2d312e', muted: '#646a66', rule: '#e3ded3', forest: '#2b4c3f' };
 const SCOPE_FILL: Record<Scope, string> = { 1: PAPER.s1, 2: PAPER.s2, 3: PAPER.s3 };
 
 const SECTOR_LABELS: Record<string, string> = {
@@ -128,7 +128,7 @@ export function EsgReportView({ mode }: { mode: 'cabinet' | 'client' }) {
         }
       })
       .join('\n');
-    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rapport ESG ${year} — ${org.name}</title>${FONT_LINK}<style>${css}\nbody{background:#f1ece0;margin:0;padding:24px 0}.rpt{margin:0 auto}@media print{body{padding:0;background:#fff}}</style></head><body>${ref.current.outerHTML}</body></html>`;
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rapport ESG ${year} — ${org.name}</title>${FONT_LINK}<style>${css}\nbody{background:#efece5;margin:0;padding:24px 0}.rpt{margin:0 auto}@media print{body{padding:0;background:#fff}}</style></head><body>${ref.current.outerHTML}</body></html>`;
     downloadFile(`Rapport-ESG-${year}-${org.name.replace(/[^\p{L}\p{N}]+/gu, '-')}.html`, html, 'text/html;charset=utf-8');
   };
 
