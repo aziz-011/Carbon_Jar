@@ -7,7 +7,17 @@
     <title>Carbon Jar — Comptabilité carbone</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Remplacé par l'application au démarrage. Visible seulement si le script ne se charge pas. -->
+      <div style="font: 15px/1.6 system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px">
+        <h1 style="font-size: 20px">Carbon Jar ne s’est pas chargé</h1>
+        <p>Ce fichier est la source de l’application : il ne s’ouvre pas directement depuis le disque.</p>
+        <ul>
+          <li>Pour l’utiliser sans installation, ouvrez <code>dist/index.html</code> (généré par <code>npm run build</code>).</li>
+          <li>Pour développer, lancez <code>npm install</code> puis <code>npm run dev</code> et ouvrez http://localhost:5173.</li>
+        </ul>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

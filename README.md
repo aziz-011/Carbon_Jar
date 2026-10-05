@@ -17,12 +17,21 @@ Le contenu méthodologique (définitions, règles, formules, exemples) vient des
 
 ## Démarrer
 
+**Sans installation :** ouvrez `carbon-jar.html` (à la racine du dépôt) par double-clic dans votre navigateur. C’est l’application complète en un seul fichier.
+
+> Le fichier `index.html` de la racine est la **source** de l’application : ouvert directement depuis le disque, il ne charge pas (le navigateur bloque `src/main.tsx`). Utilisez `carbon-jar.html`, `dist/index.html` ou le serveur de développement.
+
+**Pour développer :**
+
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm test           # tests du moteur de calcul et du classificateur
-npm run build      # site statique dans dist/ (hébergeable tel quel)
+npm run dev              # http://localhost:5173
+npm test                 # tests du moteur de calcul et du classificateur
+npm run build            # dist/index.html, un fichier unique qui s’ouvre aussi depuis le disque
+npm run build:artifact   # version à publier comme Artifact claude.ai
 ```
+
+Après une modification, régénérez le fichier prêt à ouvrir avec `npm run build && cp dist/index.html carbon-jar.html`.
 
 Les données sont enregistrées dans le navigateur (localStorage). Il n’y a pas de serveur. Pour sauvegarder ou restaurer les données, utilisez un fichier JSON : l’export se fait depuis la page **Rapport** et l’import depuis la page **Paramètres**. Un jeu de démonstration (une entreprise chimique) est chargé au premier lancement.
 

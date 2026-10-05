@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "build:artifact": "vite build --config vite.artifact.config.ts && node scripts/make-artifact.mjs"
+    "build:artifact": "tsc -b && vite build --outDir dist-artifact && node scripts/make-artifact.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
