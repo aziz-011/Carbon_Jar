@@ -1,13 +1,13 @@
 import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Steps } from '../components/progress';
 import { workflowSteps } from '../lib/progress';
 import { Callout, Card, PageHead, ScopeBadge, Stat, Tabs, cssVar, scopeColor } from '../components/ui';
 import { getCategory } from '../data/categories';
 import type { CategoryId, Scope } from '../domain/types';
-import { carbonCostExposure, intensityRatio } from '../lib/calc';
+import { carbonCostExposure, intensityRatio, netZeroPath, trajectoryYears } from '../lib/calc';
 import { fmt, fmtMWh, fmtMoney, fmtPct, fmtT } from '../lib/format';
 import { qualityAdvice } from '../lib/recommendations';
 import { useStore } from '../state/store';
@@ -52,9 +52,16 @@ export function Dashboard() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 10);
 
-  const trend = years.map((y) => {
+  const trend = trajectoryYears(years).map((y) => {
     const i = inventoryFor(y);
-    return { year: String(y), 'Scope 1': i.scope1, 'Scope 2': method === 'location' ? i.scope2Location : i.scope2Market, 'Scope 3': i.scope3 };
+    const measured = i.results.length > 0;
+    return {
+      year: String(y),
+      'Scope 1': measured ? i.scope1 : undefined,
+      'Scope 2': measured ? (method === 'location' ? i.scope2Location : i.scope2Market) : undefined,
+      'Scope 3': measured ? i.scope3 : undefined,
+      'Trajectoire Net Zero 2050': netZeroPath(baseTotal, org.baseYear, y),
+    };
   });
 
   const topSources = [...inv.results].sort((a, b) => b.kgCO2e - a.kgCO2e).slice(0, 6);
@@ -73,10 +80,13 @@ export function Dashboard() {
           { equity: 'part de capital', financial: 'contrôle financier', operational: 'contrôle opérationnel' }[org.consolidation]
         } », PRG ${org.gwpSet}.`}
         actions={
+          <>
+          <Link className="btn primary" to="/rapport"><Icon name="download" size={15} /> Export réglementaire</Link>
           <select value={method} onChange={(e) => setMethod(e.target.value as 'location' | 'market')} aria-label="Méthode Scope 2">
             <option value="location">Scope 2 : location-based</option>
             <option value="market">Scope 2 : market-based</option>
           </select>
+          </>
         }
       />
 
@@ -179,9 +189,9 @@ export function Dashboard() {
       </div>
 
       <div className="grid g2">
-        <Card icon="chart" title="Évolution annuelle (t CO2e)">
+        <Card icon="chart" title="Évolution et trajectoire Net Zero (t CO2e)">
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={trend}>
+            <ComposedChart data={trend}>
               <CartesianGrid vertical={false} stroke={grid} />
               <XAxis dataKey="year" tick={{ fill: axis, fontSize: 12 }} />
               <YAxis tick={{ fill: axis, fontSize: 11 }} tickFormatter={(v) => fmt(v)} />
@@ -190,7 +200,8 @@ export function Dashboard() {
               <Bar dataKey="Scope 1" stackId="a" fill={scopeColor(1)} />
               <Bar dataKey="Scope 2" stackId="a" fill={scopeColor(2)} />
               <Bar dataKey="Scope 3" stackId="a" fill={scopeColor(3)} radius={[4, 4, 0, 0]} />
-            </BarChart>
+              <Line type="linear" dataKey="Trajectoire Net Zero 2050" stroke={cssVar('--emerald', '#059669')} strokeWidth={2.5} strokeDasharray="6 4" dot={false} connectNulls isAnimationActive={false} />
+            </ComposedChart>
           </ResponsiveContainer>
         </Card>
 

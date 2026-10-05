@@ -326,3 +326,19 @@ export function targetProgress(baseValue: number, currentValue: number, reductio
 
 /** Référence SBTi : réduction linéaire minimale de 4,2 %/an (Scopes 1 et 2) pour une trajectoire 1,5 °C. */
 export const SBTI_ANNUAL_RATE_15C = 4.2;
+
+/**
+ * Trajectoire Net Zero de référence : baisse linéaire des émissions de l'année de base
+ * jusqu'à zéro en 2050 (horizon de l'Accord de Paris et du standard Net Zero de la SBTi).
+ */
+export function netZeroPath(baseTotal: number, baseYear: number, year: number, netZeroYear = 2050): number | undefined {
+  if (year < baseYear || baseTotal <= 0) return undefined;
+  return Math.max(0, baseTotal * (1 - (year - baseYear) / (netZeroYear - baseYear)));
+}
+
+/** Années affichées avec la trajectoire : celles mesurées, prolongées jusqu'à l'horizon donné. */
+export function trajectoryYears(years: number[], until = 2030): number[] {
+  const from = Math.min(...years);
+  const to = Math.max(until, ...years);
+  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+}

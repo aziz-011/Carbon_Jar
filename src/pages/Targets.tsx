@@ -120,8 +120,8 @@ export function Targets() {
                   <YAxis tick={{ fill: cssVar('--muted', '#888'), fontSize: 11 }} tickFormatter={(v) => fmt(v)} domain={[0, 'auto']} />
                   <Tooltip formatter={(v: number) => `${fmt(v, 3)} ${unit}`} />
                   <Legend />
-                  <Line type="linear" dataKey="trajectoire" stroke={cssVar('--muted', '#888')} strokeDasharray="5 4" dot={false} connectNulls />
-                  <Scatter dataKey="réel" fill={cssVar('--accent', '#2b4c3f')} />
+                  <Line type="linear" dataKey="trajectoire" stroke={cssVar('--emerald', '#059669')} strokeWidth={2.5} strokeDasharray="6 4" dot={false} connectNulls />
+                  <Scatter dataKey="réel" fill={cssVar('--blue', '#1e4e8c')} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

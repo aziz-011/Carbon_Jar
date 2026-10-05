@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from 'recharts';
+import { Bar, CartesianGrid, ComposedChart, Legend, Line, XAxis, YAxis } from 'recharts';
 import { Icon, type IconName } from '../components/Icon';
 import { LogoMark } from '../components/Logo';
 import { Callout, PageHead } from '../components/ui';
@@ -9,7 +9,7 @@ import { GRID_ZONES } from '../data/emissionFactors';
 import { GWP_SET_LABELS } from '../data/gwp';
 import { SOURCE_OF } from '../data/sources';
 import type { CategoryId, DataQuality, EsgYear, Scope } from '../domain/types';
-import { carbonCostExposure, factorKgCO2ePerUnit, intensityRatio, targetProgress } from '../lib/calc';
+import { carbonCostExposure, factorKgCO2ePerUnit, intensityRatio, netZeroPath, targetProgress, trajectoryYears } from '../lib/calc';
 import { downloadFile, isEmbedded } from '../lib/csv';
 import { DOC_TYPE_LABELS } from '../lib/documents/parse';
 import { FRAMEWORK_MAP, GOVERNANCE_FIELDS, GOVERNANCE_PRACTICES, SOCIAL_FIELDS, buildExecutiveSummary } from '../lib/esgReport';
@@ -19,7 +19,7 @@ import { useStore } from '../state/store';
 import { APPROACHES } from './Boundary';
 
 /** Couleurs du document imprimé (indépendantes du thème de l'écran). */
-const PAPER = { s1: '#2b4c3f', s2: '#c49a45', s3: '#7a8f99', ink: '#2d312e', muted: '#646a66', rule: '#e3ded3', forest: '#2b4c3f' };
+const PAPER = { s1: '#1e4e8c', s2: '#5b8fc7', s3: '#a3aeba', ink: '#2b2f2d', muted: '#666b68', rule: '#e7dfce', forest: '#1e3a5f', emerald: '#059669' };
 const SCOPE_FILL: Record<Scope, string> = { 1: PAPER.s1, 2: PAPER.s2, 3: PAPER.s3 };
 
 const SECTOR_LABELS: Record<string, string> = {
@@ -94,10 +94,13 @@ export function EsgReportView({ mode }: { mode: 'cabinet' | 'client' }) {
   const water = esg.waterM3 ?? inv.results.filter((r) => r.factor.id === 'water').reduce((s, r) => s + r.activity.quantity, 0);
   const wasteT = esg.wasteTonnes ?? inv.results.filter((r) => r.category === 'S3_C5').reduce((s, r) => s + r.activity.quantity, 0);
   const scopes: Record<Scope, number> = { 1: inv.scope1, 2: inv.scope2Location, 3: inv.scope3 };
-  const trend = years.map((y) => {
+  const baseInv = inventoryFor(org.baseYear);
+  const trend = trajectoryYears(years).map((y) => {
     const i = inventoryFor(y);
-    return { year: String(y), 'Scope 1': i.scope1, 'Scope 2': i.scope2Location, 'Scope 3': i.scope3 };
+    const m = i.results.length > 0;
+    return { year: String(y), 'Scope 1': m ? i.scope1 : undefined, 'Scope 2': m ? i.scope2Location : undefined, 'Scope 3': m ? i.scope3 : undefined, 'Trajectoire Net Zero 2050': netZeroPath(baseInv.totalLocation, org.baseYear, y) };
   });
+  const measuredYears = years.filter((y) => inventoryFor(y).results.length > 0).length;
   const energyRows = [...new Map(inv.results.filter((r) => r.energyKwh > 0).map((r) => [r.factor.id, r.factor])).values()]
     .map((f) => {
       const rs = inv.results.filter((r) => r.factor.id === f.id);
@@ -128,7 +131,7 @@ export function EsgReportView({ mode }: { mode: 'cabinet' | 'client' }) {
         }
       })
       .join('\n');
-    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rapport ESG ${year} — ${org.name}</title>${FONT_LINK}<style>${css}\nbody{background:#efece5;margin:0;padding:24px 0}.rpt{margin:0 auto}@media print{body{padding:0;background:#fff}}</style></head><body>${ref.current.outerHTML}</body></html>`;
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rapport ESG ${year} — ${org.name}</title>${FONT_LINK}<style>${css}\nbody{background:#f3eee3;margin:0;padding:24px 0}.rpt{margin:0 auto}@media print{body{padding:0;background:#fff}}</style></head><body>${ref.current.outerHTML}</body></html>`;
     downloadFile(`Rapport-ESG-${year}-${org.name.replace(/[^\p{L}\p{N}]+/gu, '-')}.html`, html, 'text/html;charset=utf-8');
   };
 
@@ -326,8 +329,8 @@ export function EsgReportView({ mode }: { mode: 'cabinet' | 'client' }) {
               <p className="rpt-note">Exposition au prix du carbone (Scopes 1 et 2 × {fmt(org.carbonPrice)} {org.currency}/t) : {fmtMoney(carbonCostExposure(inv.scope1 + inv.scope2Location, org.carbonPrice), org.currency)}.</p>
 
               <h3>4.5 Évolution</h3>
-              {trend.length > 1 ? (
-                <BarChart width={560} height={220} data={trend}>
+              {measuredYears > 1 ? (
+                <ComposedChart width={560} height={220} data={trend}>
                   <CartesianGrid vertical={false} stroke={PAPER.rule} />
                   <XAxis dataKey="year" tick={{ fill: PAPER.muted, fontSize: 11 }} />
                   <YAxis tick={{ fill: PAPER.muted, fontSize: 11 }} tickFormatter={(v) => fmt(v)} />
@@ -335,7 +338,8 @@ export function EsgReportView({ mode }: { mode: 'cabinet' | 'client' }) {
                   <Bar dataKey="Scope 1" stackId="a" fill={SCOPE_FILL[1]} isAnimationActive={false} />
                   <Bar dataKey="Scope 2" stackId="a" fill={SCOPE_FILL[2]} isAnimationActive={false} />
                   <Bar dataKey="Scope 3" stackId="a" fill={SCOPE_FILL[3]} radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                </BarChart>
+                  <Line type="linear" dataKey="Trajectoire Net Zero 2050" stroke={PAPER.emerald} strokeWidth={2.5} strokeDasharray="6 4" dot={false} connectNulls isAnimationActive={false} />
+                </ComposedChart>
               ) : (
                 <p className="rpt-note">Premier exercice mesuré : il constitue l’année de référence.</p>
               )}

@@ -33,7 +33,7 @@ export function Report() {
         intro="Rapport structuré selon les exigences de déclaration du GHG Protocol (informations requises et optionnelles). Imprimez-le en PDF pour le partager ou le transmettre à un vérificateur."
         actions={
           <>
-            {!isEmbedded() && <button onClick={() => window.print()}><Icon name="printer" size={15} /> Imprimer / PDF</button>}
+            {!isEmbedded() && <button className="primary" onClick={() => window.print()}><Icon name="printer" size={15} /> Export réglementaire (PDF)</button>}
             <button onClick={exportJson}><Icon name="download" size={15} /> Sauvegarde JSON</button>
           </>
         }
