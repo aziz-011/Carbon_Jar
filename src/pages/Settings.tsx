@@ -1,4 +1,5 @@
-import { Callout, Card, Field, NumberInput, PageHead } from '../components/ui';
+import { useState } from 'react';
+import { Callout, Card, ConfirmButton, Field, NumberInput, PageHead } from '../components/ui';
 import { GWP_SET_LABELS } from '../data/gwp';
 import type { GwpSet, Sector } from '../domain/types';
 import { DEMO_STATE, EMPTY_STATE, useStore, type AppState } from '../state/store';
@@ -19,15 +20,16 @@ export function Settings() {
   const { state, dispatch, years } = useStore();
   const { org } = state;
   const patch = (p: Partial<typeof org>) => dispatch({ type: 'org', patch: p });
+  const [message, setMessage] = useState<{ tone: 'key' | 'critique'; text: string }>();
 
   const importJson = async (file: File) => {
     try {
       const data = JSON.parse(await file.text()) as AppState;
       if (!data.org || !Array.isArray(data.activities)) throw new Error('format');
       dispatch({ type: 'reset', state: { ...EMPTY_STATE, ...data } });
-      alert('Données restaurées.');
+      setMessage({ tone: 'key', text: 'Données restaurées.' });
     } catch {
-      alert('Fichier invalide : utilisez une sauvegarde JSON exportée depuis la page Rapport.');
+      setMessage({ tone: 'critique', text: 'Fichier invalide : utilisez une sauvegarde JSON exportée depuis la page Rapport.' });
     }
   };
 
@@ -99,13 +101,18 @@ export function Settings() {
             ⬆ Restaurer une sauvegarde JSON
             <input type="file" accept="application/json,.json" hidden onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} />
           </label>
-          <button onClick={() => confirm('Charger le jeu de démonstration (entreprise chimique) ? Les données actuelles seront remplacées.') && dispatch({ type: 'reset', state: DEMO_STATE })}>
+          <ConfirmButton question="Remplacer les données actuelles par la démonstration ?" onConfirm={() => dispatch({ type: 'reset', state: DEMO_STATE })}>
             Charger la démonstration
-          </button>
-          <button className="danger" onClick={() => confirm('Effacer toutes les données et repartir de zéro ?') && dispatch({ type: 'reset', state: EMPTY_STATE })}>
+          </ConfirmButton>
+          <ConfirmButton className="danger" question="Effacer toutes les données ?" onConfirm={() => dispatch({ type: 'reset', state: EMPTY_STATE })}>
             Repartir de zéro
-          </button>
+          </ConfirmButton>
         </div>
+        {message && (
+          <div style={{ marginTop: 12 }}>
+            <Callout tone={message.tone}>{message.text}</Callout>
+          </div>
+        )}
         <p className="small muted" style={{ marginTop: 8 }}>
           {state.activities.length} données d’activité · {state.entities.length} entités · {state.targets.length} objectifs · {state.customFactors.length} facteurs personnalisés.
         </p>

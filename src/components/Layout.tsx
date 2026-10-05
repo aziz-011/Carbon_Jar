@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useStore } from '../state/store';
+import { ExportPanel } from './ExportPanel';
 
 const NAV: Array<{ group: string; items: Array<[string, string, string]> }> = [
   { group: 'Pilotage', items: [['/', '📊', 'Tableau de bord'], ['/conseils', '💡', 'Plan de réduction'], ['/objectifs', '🎯', 'Objectifs & trajectoire']] },
@@ -52,6 +53,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <strong>🫙 Carbon Jar</strong>
         </div>
         <main className="main">{children}</main>
+        <ExportPanel />
       </div>
     </div>
   );

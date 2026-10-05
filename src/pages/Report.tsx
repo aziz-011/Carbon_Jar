@@ -3,7 +3,7 @@ import { categoriesOfScope, getCategory } from '../data/categories';
 import { GWP_SET_LABELS } from '../data/gwp';
 import type { DataQuality, Scope } from '../domain/types';
 import { carbonCostExposure, intensityRatio } from '../lib/calc';
-import { downloadFile } from '../lib/csv';
+import { downloadFile, isEmbedded } from '../lib/csv';
 import { fmt, fmtMoney, fmtPct } from '../lib/format';
 import { useStore } from '../state/store';
 import { APPROACHES } from './Boundary';
@@ -41,7 +41,7 @@ export function Report() {
         intro="Rapport structuré selon les exigences de déclaration du GHG Protocol (informations requises et optionnelles). Imprimez-le en PDF pour le partager ou le transmettre à un vérificateur."
         actions={
           <>
-            <button onClick={() => window.print()}>🖨 Imprimer / PDF</button>
+            {!isEmbedded() && <button onClick={() => window.print()}>🖨 Imprimer / PDF</button>}
             <button onClick={exportJson}>⬇ Sauvegarde JSON</button>
           </>
         }

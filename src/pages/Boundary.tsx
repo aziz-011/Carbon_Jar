@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Callout, Card, NumberInput, PageHead } from '../components/ui';
+import { Callout, Card, ConfirmButton, NumberInput, PageHead } from '../components/ui';
 import { GRID_ZONES } from '../data/emissionFactors';
 import type { ConsolidationApproach, Entity } from '../domain/types';
 import { computeInventory, consolidationShare } from '../lib/calc';
@@ -76,15 +76,9 @@ export function Boundary() {
                   </td>
                   <td className="nowrap">
                     <button className="ghost" onClick={() => setDraft(e)} title="Modifier">✏️</button>
-                    <button
-                      className="ghost danger"
-                      title="Supprimer"
-                      onClick={() => {
-                        if (confirm(`Supprimer « ${e.name} » et toutes ses données d’activité ?`)) dispatch({ type: 'entity:delete', id: e.id });
-                      }}
-                    >
+                    <ConfirmButton className="ghost danger" title="Supprimer" question="Supprimer l’entité et ses données ?" onConfirm={() => dispatch({ type: 'entity:delete', id: e.id })}>
                       🗑
-                    </button>
+                    </ConfirmButton>
                   </td>
                 </tr>
               ))}

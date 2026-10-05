@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Scope } from '../domain/types';
 
 export const SCOPE_COLORS: Record<Scope | 'memo', string> = {
@@ -140,4 +140,43 @@ export function ProgressBar({ value, color }: { value: number; color?: string })
 
 export function Empty({ children }: { children: ReactNode }) {
   return <div className="empty">{children}</div>;
+}
+
+/** Bouton à confirmation intégrée (les boîtes de dialogue natives sont bloquées dans les cadres intégrés). */
+export function ConfirmButton({
+  children,
+  question,
+  onConfirm,
+  className,
+  title,
+}: {
+  children: ReactNode;
+  question: string;
+  onConfirm: () => void;
+  className?: string;
+  title?: string;
+}) {
+  const [asking, setAsking] = useState(false);
+  if (!asking) {
+    return (
+      <button className={className} title={title} onClick={() => setAsking(true)}>
+        {children}
+      </button>
+    );
+  }
+  return (
+    <span className="confirm" role="group" aria-label={question}>
+      <span className="small">{question}</span>
+      <button
+        className="danger"
+        onClick={() => {
+          setAsking(false);
+          onConfirm();
+        }}
+      >
+        Confirmer
+      </button>
+      <button onClick={() => setAsking(false)}>Annuler</button>
+    </span>
+  );
 }

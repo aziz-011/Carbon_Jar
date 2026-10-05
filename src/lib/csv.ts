@@ -102,7 +102,29 @@ export function toCsv(rows: Array<Array<string | number>>): string {
     .join('\n');
 }
 
+/** Vrai lorsque l'application tourne dans un cadre intégré (ex. Artifact claude.ai) où les téléchargements sont bloqués. */
+export function isEmbedded(): boolean {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
+export interface ExportRequest {
+  filename: string;
+  content: string;
+}
+
+/**
+ * Propose un fichier à l'utilisateur. Hors cadre intégré, le fichier est téléchargé ;
+ * dans un cadre intégré, le contenu est affiché dans un panneau avec un bouton « Copier ».
+ */
 export function downloadFile(filename: string, content: string, mime = 'text/csv;charset=utf-8') {
+  if (isEmbedded()) {
+    window.dispatchEvent(new CustomEvent<ExportRequest>('carbonjar:export', { detail: { filename, content } }));
+    return;
+  }
   const blob = new Blob(['﻿' + content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
