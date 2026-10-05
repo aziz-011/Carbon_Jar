@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import type { DocType, DocumentRecord, Extraction } from '../domain/types';
+import { getCategory } from '../data/categories';
+import type { DocType, DocumentRecord, Extraction, Scope } from '../domain/types';
 import { aiExtract, aiImageSupport, getSample } from '../lib/documents/ai';
-import { checkLines, extractionToActivities, mergeVehicle } from '../lib/documents/commit';
-import { detectDocType, parseDocument } from '../lib/documents/parse';
-import { isImage, isPdf, readDocumentText, renderPdfFirstPage } from '../lib/documents/read';
+import { blocksAutoValidation, fileHash, runChecks } from '../lib/documents/checks';
+import { checkLines, extractionToActivities, mergeVehicle, vehiclesFromLines } from '../lib/documents/commit';
+import { DOC_TYPE_LABELS, detectDocType, parseDocument } from '../lib/documents/parse';
+import { isImage, isPdf, isSpreadsheet, readDocumentText, renderPdfFirstPage } from '../lib/documents/read';
+import { looksTabular, parseTable } from '../lib/documents/table';
 import { saveFile } from '../lib/fileStore';
-import { uid } from '../lib/format';
+import { fmt, uid } from '../lib/format';
 import { useStore } from './store';
 
 export const AUTO_THRESHOLD = 0.8;
+export const MAX_FILE_MB = 25;
+export const ACCEPTED_FILES = '.pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.csv,.tsv,.xlsx,.xls,.ods,application/pdf,image/*,text/plain,text/csv';
 
 export interface ProcessOptions {
   entityId: string;
@@ -22,16 +27,51 @@ export interface ProcessOptions {
 
 export type IncomingFile = File | { name: string; text: string };
 
+export type ReceiptOutcome = 'integre' | 'a_verifier' | 'doublon' | 'refuse' | 'erreur';
+
+/** Accusé de réception d'un fichier : ce qui a été lu et ce qu'il est devenu. */
+export interface Receipt {
+  key: string;
+  name: string;
+  outcome: ReceiptOutcome;
+  docId?: string;
+  docType?: DocType;
+  summary: string;
+  reason?: string;
+  scopes: Scope[];
+  at: string;
+}
+
+export interface QueueItem {
+  key: string;
+  name: string;
+  step: number;
+  label: string;
+}
+
+export const PIPELINE_STEPS = ['Réception', 'Lecture', 'Extraction', 'Contrôles', 'Classement'];
+
+function rejectReason(f: IncomingFile): string | undefined {
+  if (!(f instanceof File)) return undefined;
+  if (f.size === 0) return 'Fichier vide.';
+  if (f.size > MAX_FILE_MB * 1024 * 1024) return `Fichier trop volumineux (${fmt(f.size / 1024 / 1024, 1)} Mo, maximum ${MAX_FILE_MB} Mo).`;
+  const ok = isPdf(f) || isImage(f) || isSpreadsheet(f) || /\.(txt|csv|tsv)$/i.test(f.name) || f.type.startsWith('text/');
+  if (!ok) return 'Format non pris en charge : envoyez un PDF, une photo (JPG, PNG), un fichier Excel ou CSV.';
+  return undefined;
+}
+
 /**
  * Chaîne de traitement d'un document, commune au portail client et à l'espace cabinet :
- * enregistrement du fichier → lecture du texte → extraction (Claude ou règles) → classement
- * par scope → validation automatique si l'extraction est sûre, sinon file de vérification.
+ * contrôle du fichier → empreinte (doublons) → lecture du texte ou du tableau →
+ * extraction (Claude ou règles) → contrôles de cohérence → classement par scope →
+ * intégration automatique si tout est sûr, sinon file de vérification.
  */
 export function useDocumentPipeline() {
   const { state, dispatch, factors, factorById } = useStore();
   const [aiAvailable, setAiAvailable] = useState(false);
   const [aiImages, setAiImages] = useState(false);
-  const [queue, setQueue] = useState<Array<{ key: string; name: string; step: string }>>([]);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
   // Dernier état connu (les traitements s'enchaînent de manière asynchrone).
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -48,23 +88,42 @@ export function useDocumentPipeline() {
   const countryOf = (entityId: string) => stateRef.current.entities.find((e) => e.id === entityId)?.country ?? 'TN';
 
   const validate = (doc: DocumentRecord, e: Extraction) => {
-    const vehicle = mergeVehicle(stateRef.current.vehicles, e, doc);
-    const activities = extractionToActivities(doc, e, factorById, vehicle);
+    const st = stateRef.current;
+    const vehicle = mergeVehicle(st.vehicles, e, doc);
+    const newVehicles = vehiclesFromLines(vehicle ? [...st.vehicles, vehicle] : st.vehicles, e, doc, factorById);
+    const fleet = [...st.vehicles, ...(vehicle ? [vehicle] : []), ...newVehicles];
+    const activities = extractionToActivities(doc, e, factorById, vehicle, fleet);
     dispatch({ type: 'document:upsert', document: { ...doc, extraction: e } });
-    dispatch({ type: 'document:validate', documentId: doc.id, activities, vehicle });
+    dispatch({ type: 'document:validate', documentId: doc.id, activities, vehicle, newVehicles });
   };
 
-  /** Valide un document si l'extraction est complète et suffisamment sûre. */
-  const isSafe = (e: Extraction): boolean => {
-    if (e.confidence < AUTO_THRESHOLD) return false;
+  /** Extraction complète, sûre et sans alerte : intégrable sans vérification humaine. */
+  const isSafe = (e: Extraction, doc: DocumentRecord): boolean => {
+    if (e.confidence < AUTO_THRESHOLD || blocksAutoValidation(doc.checks ?? [])) return false;
     const checks = checkLines(e, factorById);
     const vehicleOnly = (e.docType === 'carte_grise' || e.docType === 'fiche_vehicule') && !!e.vehicle?.plate;
     return vehicleOnly || (checks.length > 0 && checks.every((c) => c.ok));
   };
 
-  const analyse = async (opts: { file?: File; doc: DocumentRecord; text: string; scanned: boolean; wantAi: boolean; hintType?: DocType }): Promise<Extraction> => {
-    const { file, doc, text, scanned, wantAi, hintType } = opts;
+  const analyse = async (opts: { file?: File; doc: DocumentRecord; text: string; scanned: boolean; wantAi: boolean; hintType?: DocType; sheets?: string[] }): Promise<Extraction> => {
+    const { file, doc, text, scanned, wantAi, hintType, sheets } = opts;
     const country = countryOf(doc.entityId);
+    // Tableaux (Excel, CSV) : analyse déterministe ligne par ligne.
+    const tables = sheets?.filter(looksTabular) ?? [];
+    if (tables.length) {
+      const parts = tables.map((t) => parseTable(t, factors, country, hintType));
+      const lines = parts.flatMap((p) => p.lines);
+      const dates = parts.flatMap((p) => [p.periodStart, p.periodEnd]).filter((d): d is string => !!d).sort();
+      return {
+        ...parts[0],
+        lines,
+        periodStart: dates[0],
+        periodEnd: dates[dates.length - 1],
+        totalAmount: parts.reduce((s, p) => s + (p.totalAmount ?? 0), 0) || undefined,
+        confidence: Math.min(...parts.map((p) => p.confidence)),
+        warnings: parts.flatMap((p) => p.warnings),
+      };
+    }
     if (wantAi && aiAvailable) {
       let image: Blob | undefined;
       if (file && isImage(file) && aiImages) image = file;
@@ -94,43 +153,112 @@ export function useDocumentPipeline() {
     };
   };
 
+  const summarize = (e: Extraction): { summary: string; scopes: Scope[] } => {
+    const parts: string[] = [DOC_TYPE_LABELS[e.docType] + (e.supplier ? ` ${e.supplier}` : '')];
+    const scopes = new Set<Scope>();
+    for (const l of e.lines) {
+      const f = l.factorId ? factorById.get(l.factorId) : undefined;
+      if (f) scopes.add(getCategory(f.category).scope);
+    }
+    const first = e.lines[0];
+    if (first?.quantity !== undefined) parts.push(`${fmt(first.quantity, Math.abs(first.quantity) < 100 ? 3 : 0)} ${first.unit ?? ''}`.trim() + (e.lines.length > 1 ? ` (+ ${e.lines.length - 1} ligne(s))` : ''));
+    if (e.vehicle?.plate) parts.push(`véhicule ${e.vehicle.plate}`);
+    if (e.periodStart && e.periodEnd) parts.push(`${e.periodStart} → ${e.periodEnd}`);
+    return { summary: parts.join(' · '), scopes: [...scopes].sort() };
+  };
+
+  const pushReceipt = (r: Omit<Receipt, 'at'>) => setReceipts((rs) => [{ ...r, at: new Date().toISOString() }, ...rs].slice(0, 50));
+
   const processFiles = async (files: IncomingFile[], opts: ProcessOptions) => {
-    for (const f of files) {
-      const isFile = f instanceof File;
-      const key = uid();
+    // Tous les fichiers apparaissent tout de suite dans la file, puis sont traités un par un.
+    const items = files.map((f) => ({ f, key: uid() }));
+    setQueue((q) => [...q, ...items.map(({ f, key }) => ({ key, name: f.name, step: 0, label: 'En attente' }))]);
+    for (const { f, key } of items) {
       const name = f.name;
-      setQueue((q) => [...q, { key, name, step: 'Lecture…' }]);
-      const step = (s: string) => setQueue((q) => q.map((x) => (x.key === key ? { ...x, step: s } : x)));
-      const doc: DocumentRecord = {
-        id: uid(),
-        name,
-        size: isFile ? f.size : f.text.length,
-        mime: isFile ? f.type || 'application/octet-stream' : 'text/plain',
-        uploadedAt: new Date().toISOString(),
-        entityId: opts.entityId,
-        year: opts.year,
-        status: 'a_valider',
-        activityIds: [],
-        sample: !isFile,
-        source: opts.source,
-        requestId: opts.requestId,
-      };
+      const step = (n: number) => setQueue((q) => q.map((x) => (x.key === key ? { ...x, step: n, label: PIPELINE_STEPS[n] } : x)));
+      const done = () => setQueue((q) => q.filter((x) => x.key !== key));
+      step(0);
+      const refused = rejectReason(f);
+      if (refused) {
+        pushReceipt({ key, name, outcome: 'refuse', summary: 'Fichier refusé', reason: refused, scopes: [] });
+        done();
+        continue;
+      }
+      const isFile = f instanceof File;
+      const file = isFile ? f : new File([f.text], name, { type: 'text/plain' });
       try {
-        const file = isFile ? f : new File([f.text], name, { type: 'text/plain' });
+        const buf = await file.arrayBuffer();
+        const hash = await fileHash(buf, `${name}:${file.size}`);
+        const dup = stateRef.current.documents.find((d) => d.hash === hash && d.status !== 'rejete');
+        if (dup) {
+          pushReceipt({ key, name, outcome: 'doublon', docId: dup.id, summary: 'Déjà reçu', reason: `Ce fichier a déjà été déposé (« ${dup.name} ») : il n’a pas été ajouté une seconde fois.`, scopes: [] });
+          done();
+          continue;
+        }
+        const doc: DocumentRecord = {
+          id: uid(),
+          name,
+          size: file.size,
+          mime: file.type || 'application/octet-stream',
+          uploadedAt: new Date().toISOString(),
+          entityId: opts.entityId,
+          year: opts.year,
+          status: 'a_valider',
+          activityIds: [],
+          sample: !isFile,
+          source: opts.source,
+          requestId: opts.requestId,
+          hash,
+        };
         await saveFile(doc.id, file);
-        const { text, scanned } = isFile ? await readDocumentText(f) : { text: f.text, scanned: false };
-        step(opts.useAi && aiAvailable ? 'Lecture par Claude…' : 'Extraction et classement…');
-        const extraction = await analyse({ file, doc, text, scanned, wantAi: opts.useAi, hintType: opts.hintType });
-        const full: DocumentRecord = { ...doc, text, extraction };
+        step(1);
+        const read = isFile ? await readDocumentText(f) : { text: f.text, scanned: false, sheets: /\.(csv|tsv)$/i.test(name) ? [f.text] : undefined };
+        step(2);
+        const extraction = await analyse({ file, doc, text: read.text, scanned: read.scanned, wantAi: opts.useAi, hintType: opts.hintType, sheets: read.sheets });
+        step(3);
+        const st = stateRef.current;
+        const checks = runChecks(doc, extraction, { documents: st.documents, activities: st.activities, factors: factorById, reportingYear: st.org.reportingYear });
+        const full: DocumentRecord = { ...doc, text: read.text, extraction, checks };
         dispatch({ type: 'document:upsert', document: full });
-        if (opts.autoValidate && isSafe(extraction)) validate(full, extraction);
+        step(4);
+        const { summary, scopes } = summarize(extraction);
+        if (opts.autoValidate && isSafe(extraction, full)) {
+          validate(full, extraction);
+          pushReceipt({ key, name, outcome: 'integre', docId: doc.id, docType: extraction.docType, summary, scopes });
+        } else {
+          const alert = checks.find((c) => c.level !== 'info');
+          const reason =
+            alert?.message ??
+            (extraction.lines.length === 0 && !extraction.vehicle?.plate
+              ? 'Aucune quantité lue automatiquement : nos ingénieurs vont la saisir.'
+              : extraction.confidence < AUTO_THRESHOLD
+                ? `Lecture incertaine (confiance ${Math.round(extraction.confidence * 100)} %) : vérification par nos ingénieurs.`
+                : 'Vérification par nos ingénieurs.');
+          pushReceipt({ key, name, outcome: 'a_verifier', docId: doc.id, docType: extraction.docType, summary, reason, scopes });
+        }
       } catch (err) {
-        dispatch({ type: 'document:upsert', document: { ...doc, status: 'erreur', error: err instanceof Error ? err.message : 'Lecture impossible' } });
+        pushReceipt({ key, name, outcome: 'erreur', summary: 'Lecture impossible', reason: err instanceof Error ? err.message : 'Le fichier n’a pas pu être lu.', scopes: [] });
       } finally {
-        setQueue((q) => q.filter((x) => x.key !== key));
+        done();
       }
     }
   };
 
-  return { aiAvailable, aiImages, queue, processFiles, validate, analyse };
+  /** Intègre d'un coup les pièces en attente dont l'extraction est complète et sans aucune alerte. */
+  const validateMany = (docs: DocumentRecord[]): number => {
+    let n = 0;
+    for (const d of docs) {
+      const e = d.extraction;
+      if (!e || d.status !== 'a_valider') continue;
+      const lines = checkLines(e, factorById);
+      const ok = (lines.length > 0 && lines.every((c) => c.ok)) || (!!e.vehicle?.plate && e.lines.length === 0);
+      // Seules les pièces sans aucune alerte sont intégrées d'un coup ; les autres s'ouvrent une à une.
+      if (!ok || (d.checks ?? []).some((c) => c.level !== 'info')) continue;
+      validate(d, e);
+      n++;
+    }
+    return n;
+  };
+
+  return { aiAvailable, aiImages, queue, receipts, clearReceipts: () => setReceipts([]), processFiles, validate, validateMany, analyse };
 }

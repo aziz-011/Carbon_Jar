@@ -48,7 +48,7 @@ export type Action =
   | { type: 'factor:delete'; id: string }
   | { type: 'document:upsert'; document: DocumentRecord }
   | { type: 'document:delete'; id: string }
-  | { type: 'document:validate'; documentId: string; activities: Activity[]; vehicle?: Vehicle }
+  | { type: 'document:validate'; documentId: string; activities: Activity[]; vehicle?: Vehicle; newVehicles?: Vehicle[] }
   | { type: 'document:reopen'; documentId: string }
   | { type: 'vehicle:upsert'; vehicle: Vehicle }
   | { type: 'vehicle:delete'; id: string }
@@ -187,7 +187,8 @@ export function reducer(state: AppState, action: Action): AppState {
           activities = activities.map((a) => (a.vehicleId === action.vehicle!.id ? { ...a, vehicleId: same.id } : a));
         }
       }
-      const vehicles = vehicle ? upsert(state.vehicles, vehicle) : state.vehicles;
+      let vehicles = vehicle ? upsert(state.vehicles, vehicle) : state.vehicles;
+      for (const nv of action.newVehicles ?? []) if (!vehicles.some((v) => plateKey(v.plate) === plateKey(nv.plate))) vehicles = [...vehicles, nv];
       return {
         ...state,
         vehicles,

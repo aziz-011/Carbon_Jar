@@ -62,6 +62,11 @@ Les données sont enregistrées dans le navigateur (localStorage). Il n’y a pa
   - Scans et photos : lus par Claude lorsque la plateforme est ouverte sur claude.ai (capacité `sample`) ; sinon, saisie assistée.
   - Chaque pièce est reconnue (type, fournisseur, numéro, période, montant, quantités, immatriculation), classée dans le bon scope, puis validée automatiquement si la confiance dépasse 80 %, ou placée dans la file « À valider ».
   - Chaque donnée garde le lien vers sa pièce (piste d’audit).
+  - Réception : glisser-déposer sur chaque demande, prise de photo sur téléphone, suivi étape par étape (réception, lecture, extraction, contrôles, classement) et accusé de réception. Les fichiers vides, trop lourds (> 25 Mo) ou d’un format non pris en charge sont refusés, et un fichier déjà reçu est signalé.
+  - Tableaux Excel / CSV (relevés de cartes carburant, exports comptables) : détection des colonnes, une ligne par véhicule et par carburant, lignes « Total » ignorées, véhicules inconnus ajoutés à la flotte.
+  - Factures STEG : somme des postes horaires (jour, pointe, soir, nuit), index × coefficient, dates écrites en toutes lettres, conversion MWh / GJ / thermies.
+  - Contrôles de cohérence : doublon, période déjà couverte, prix unitaire atypique, consommation atypique par rapport aux autres mois, pièce hors exercice, date future. Une pièce avec alerte n’est jamais intégrée automatiquement.
+  - Le portail indique au client les mois de factures manquants. Le client peut aussi ajouter une précision sur une pièce.
 - **Flotte** : registre alimenté par les cartes grises et fiches techniques ; carburant réel ou estimation kilométrage × consommation.
 - **Suivi** : consommé, restant et projection de fin d’année par budget (kWh, litres, t CO2e, TND) et répartition mensuelle selon les périodes des factures.
 - **Rapport ESG** : couverture, synthèse exécutive, périmètre, méthodologie, environnement (scopes, catégories, gaz, énergie, évolution, intensité, eau, déchets, objectifs, plan d’action), social, gouvernance, engagements, annexes (correspondance GRI / ESRS, facteurs utilisés, pièces justificatives). Export HTML et impression PDF.

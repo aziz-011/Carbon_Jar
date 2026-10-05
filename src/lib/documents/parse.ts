@@ -80,6 +80,24 @@ function toIsoDate(d: string): string | undefined {
 
 const DATE = String.raw`(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}|\d{4}-\d{2}-\d{2})`;
 
+/** Mois en toutes lettres (texte sans accents), abréviations comprises. */
+const MONTHS: Array<[RegExp, number]> = [
+  [/janv(?:ier)?/, 1], [/fevr?(?:ier)?/, 2], [/mars/, 3], [/avr(?:il)?/, 4], [/mai/, 5], [/juin/, 6],
+  [/juil(?:let)?/, 7], [/aout/, 8], [/sept?(?:embre)?/, 9], [/oct(?:obre)?/, 10], [/nov(?:embre)?/, 11], [/dec(?:embre)?/, 12],
+];
+const MONTH_RE = String.raw`(janv(?:ier)?|fevr?(?:ier)?|mars|avr(?:il)?|mai|juin|juil(?:let)?|aout|sept?(?:embre)?|oct(?:obre)?|nov(?:embre)?|dec(?:embre)?)\.?`;
+const monthOf = (w: string) => MONTHS.find(([re]) => re.test(w))?.[1];
+const pad = (n: number) => String(n).padStart(2, '0');
+const lastDay = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+
+/** Réécrit les dates en lettres (« 1er avril 2025 ») au format JJ/MM/AAAA. */
+export function normalizeDates(t: string): string {
+  return t.replace(new RegExp(String.raw`\b(\d{1,2})(?:er)?\s+${MONTH_RE}\s+(\d{4})\b`, 'g'), (all, d: string, m: string, y: string) => {
+    const mm = monthOf(m);
+    return mm ? `${pad(+d)}/${pad(mm)}/${y}` : all;
+  });
+}
+
 function findDates(t: string): string[] {
   return [...t.matchAll(new RegExp(DATE, 'g'))].map((m) => toIsoDate(m[1])).filter((d): d is string => !!d);
 }
@@ -88,8 +106,14 @@ function findPeriod(t: string): { start?: string; end?: string } {
   const m =
     t.match(new RegExp(String.raw`(?:du|periode(?: de consommation)?\s*:?\s*(?:du)?)\s*${DATE}\s*(?:au|a|-)\s*${DATE}`)) ??
     t.match(new RegExp(String.raw`periode[^\n]{0,40}?${DATE}[^\n]{0,10}?${DATE}`));
-  if (!m) return {};
-  return { start: toIsoDate(m[1]), end: toIsoDate(m[2]) };
+  if (m) return { start: toIsoDate(m[1]), end: toIsoDate(m[2]) };
+  // Période mensuelle : « mois de facturation : avril 2025 », « période : 04/2025 ».
+  const word = t.match(new RegExp(String.raw`(?:periode|mois|facturation|consommation)[^\n\d]{0,30}?${MONTH_RE}\s+(\d{4})`));
+  const numeric = t.match(/(?:periode|mois|facturation)[^\n\d]{0,30}?\b(\d{1,2})[/.-](\d{4})\b/);
+  const y = word ? +word[2] : numeric ? +numeric[2] : undefined;
+  const mo = word ? monthOf(word[1]) : numeric ? +numeric[1] : undefined;
+  if (y && mo && mo >= 1 && mo <= 12) return { start: `${y}-${pad(mo)}-01`, end: `${y}-${pad(mo)}-${pad(lastDay(y, mo))}` };
+  return {};
 }
 
 function findDocDate(t: string): string | undefined {
@@ -132,36 +156,63 @@ function findSupplier(t: string): string | undefined {
 
 // ─────────────────────────── Extraction par type ───────────────────────────
 
+/** Quantité d'énergie exprimée en kWh, MWh ou GJ, convertie en kWh. */
+const ENERGY = String.raw`${NUM}\s*(kwh|mwh|gwh|gj)\b`;
+const toKwh = (v: number, unit: string) => (unit === 'mwh' ? v * 1000 : unit === 'gwh' ? v * 1e6 : unit === 'gj' ? v * 277.778 : v);
+
 function electricity(t: string, warnings: string[]): ExtractedLine[] {
-  const conso = t.match(new RegExp(String.raw`(?:consommation|energie (?:active )?(?:consommee)?|quantite)[^\d\n]{0,30}${NUM}\s*kwh`));
-  let kwh = num(conso?.[1]);
-  if (kwh === undefined) {
-    const oldIdx = num(t.match(new RegExp(String.raw`(?:ancien(?:ne)? index|index (?:ancien|precedent))[^\d\n]{0,15}${NUM}`))?.[1]);
-    const newIdx = num(t.match(new RegExp(String.raw`(?:nouv(?:el|eau) index|index (?:nouveau|actuel))[^\d\n]{0,15}${NUM}`))?.[1]);
-    if (oldIdx !== undefined && newIdx !== undefined && newIdx > oldIdx) {
-      kwh = newIdx - oldIdx;
-      warnings.push(`Consommation calculée par différence d’index (${newIdx} − ${oldIdx}) : vérifiez le coefficient du compteur.`);
-    }
+  const line = (kwh: number, confidence: number): ExtractedLine[] => [{ description: 'Électricité consommée', quantity: Math.round(kwh * 1000) / 1000, unit: 'kWh', confidence }];
+
+  // 1. Total explicite (prioritaire lorsque la facture détaille aussi les postes horaires).
+  const total = t.match(new RegExp(String.raw`(?:total (?:energie|consommation|kwh)|consommation totale|energie active totale)[^\d\n]{0,30}${ENERGY}`));
+  if (total) return line(toKwh(num(total[1])!, total[2]), 0.92);
+
+  // 2. Postes horaires STEG (jour, pointe, soir, nuit) ou heures pleines / creuses : somme.
+  const postes = new Map<string, number>();
+  for (const m of t.matchAll(new RegExp(String.raw`\b(jour|pointe|soir|nuit|heures? pleines?|heures? creuses?)\b[^\d\n]{0,30}${ENERGY}`, 'g'))) {
+    const key = m[1].replace(/s$/, '');
+    if (!postes.has(key)) postes.set(key, toKwh(num(m[2])!, m[3]));
   }
-  if (kwh === undefined) {
-    const all = [...t.matchAll(new RegExp(String.raw`${NUM}\s*kwh\b`, 'g'))].map((m) => num(m[1])).filter((v): v is number => v !== undefined);
-    if (all.length) {
-      kwh = Math.max(...all);
-      warnings.push('Consommation non libellée explicitement : la plus grande valeur en kWh a été retenue, à vérifier.');
-    }
+  if (postes.size >= 2) {
+    const sum = [...postes.values()].reduce((a, b) => a + b, 0);
+    warnings.push(`Somme des postes horaires (${[...postes.keys()].join(', ')}).`);
+    return line(sum, 0.88);
   }
-  return kwh !== undefined ? [{ description: 'Électricité consommée', quantity: kwh, unit: 'kWh', confidence: conso ? 0.9 : 0.6 }] : [];
+
+  // 3. Consommation libellée.
+  const conso = t.match(new RegExp(String.raw`(?:consommation|energie (?:active )?(?:consommee)?|quantite)[^\d\n]{0,30}${ENERGY}`));
+  if (conso) return line(toKwh(num(conso[1])!, conso[2]), 0.9);
+
+  // 4. Différence d'index, multipliée par le coefficient du compteur s'il est indiqué.
+  const oldIdx = num(t.match(new RegExp(String.raw`(?:ancien(?:ne)? index|index (?:ancien|precedent))[^\d\n]{0,15}${NUM}`))?.[1]);
+  const newIdx = num(t.match(new RegExp(String.raw`(?:nouv(?:el|eau) index|index (?:nouveau|actuel))[^\d\n]{0,15}${NUM}`))?.[1]);
+  if (oldIdx !== undefined && newIdx !== undefined && newIdx > oldIdx) {
+    const coef = num(t.match(new RegExp(String.raw`coef(?:ficient)?(?: de (?:lecture|comptage|multiplication|compteur))?\s*:?\s*${NUM}`))?.[1]) ?? 1;
+    warnings.push(`Consommation calculée par différence d’index (${newIdx} − ${oldIdx})${coef !== 1 ? ` × coefficient ${coef}` : ' : vérifiez le coefficient du compteur'}.`);
+    return line((newIdx - oldIdx) * coef, coef !== 1 ? 0.85 : 0.7);
+  }
+
+  // 5. À défaut, la plus grande valeur d'énergie.
+  const all = [...t.matchAll(new RegExp(ENERGY, 'g'))].map((m) => toKwh(num(m[1]) ?? 0, m[2])).filter((v) => v > 0);
+  if (all.length) {
+    warnings.push('Consommation non libellée explicitement : la plus grande valeur en kWh a été retenue, à vérifier.');
+    return line(Math.max(...all), 0.55);
+  }
+  return [];
 }
 
 function gas(t: string, warnings: string[]): ExtractedLine[] {
-  const kwh = num(t.match(new RegExp(String.raw`(?:consommation|quantite)?[^\d\n]{0,20}${NUM}\s*kwh`))?.[1]);
-  if (kwh !== undefined) return [{ description: 'Gaz naturel consommé', quantity: kwh, unit: 'kWh PCS', factorId: 'ng_kwh', confidence: 0.85 }];
+  const e = t.match(new RegExp(String.raw`(?:consommation|quantite)?[^\d\n]{0,20}${ENERGY}`));
+  if (e) {
+    if (e[2] !== 'kwh') warnings.push(`Consommation en ${e[2].toUpperCase()} convertie en kWh.`);
+    return [{ description: 'Gaz naturel consommé', quantity: Math.round(toKwh(num(e[1])!, e[2]) * 1000) / 1000, unit: 'kWh PCS', factorId: 'ng_kwh', confidence: 0.85 }];
+  }
   const th = num(t.match(new RegExp(String.raw`${NUM}\s*(?:thermies?|\bth\b)`))?.[1]);
   if (th !== undefined) {
     warnings.push('Consommation en thermies convertie en kWh (1 thermie = 1,163 kWh).');
     return [{ description: 'Gaz naturel consommé (converti depuis les thermies)', quantity: Math.round(th * 1.163 * 1000) / 1000, unit: 'kWh PCS', factorId: 'ng_kwh', confidence: 0.75 }];
   }
-  const m3 = num(t.match(new RegExp(String.raw`${NUM}\s*(?:m3|m³)`))?.[1]);
+  const m3 = num(t.match(new RegExp(String.raw`${NUM}\s*(?:n?m3|n?m³)`))?.[1]);
   if (m3 !== undefined) return [{ description: 'Gaz naturel consommé', quantity: m3, unit: 'm³', factorId: 'ng_m3', confidence: 0.8 }];
   return [];
 }
@@ -271,7 +322,7 @@ export function extractVehicle(raw: string): ExtractedVehicle {
 
 /** Analyse complète d'un texte de document. */
 export function parseDocument(text: string, filename: string, factors: EmissionFactor[], country = 'TN', hintType?: DocType): Extraction {
-  const t = flat(text);
+  const t = normalizeDates(flat(text));
   const warnings: string[] = [];
   const detected = detectDocType(text, filename);
   // Rubrique choisie par le client : elle prime lorsque la reconnaissance est incertaine.

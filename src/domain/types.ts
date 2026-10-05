@@ -227,6 +227,18 @@ export interface ExtractedLine {
   factorId?: string;
   /** Confiance 0–1 de la classification. */
   confidence: number;
+  /** Immatriculation du véhicule concerné (relevés de cartes carburant). */
+  plate?: string;
+  /** Période propre à la ligne (relevés multi-dates). */
+  periodStart?: string;
+  periodEnd?: string;
+}
+
+/** Résultat d'un contrôle de cohérence sur un document. */
+export interface DocCheck {
+  code: 'doublon' | 'periode_couverte' | 'prix_atypique' | 'valeur_atypique' | 'hors_exercice' | 'date_future' | 'unite' | 'lecture';
+  level: 'info' | 'attention' | 'bloquant';
+  message: string;
 }
 
 export interface ExtractedVehicle {
@@ -286,6 +298,12 @@ export interface DocumentRecord {
   source?: 'client' | 'cabinet';
   /** Rubrique de la liste des documents demandés. */
   requestId?: string;
+  /** Empreinte du contenu (détection des doublons). */
+  hash?: string;
+  /** Contrôles de cohérence calculés à la réception. */
+  checks?: DocCheck[];
+  /** Précision ajoutée par le client à l'intention du cabinet. */
+  clientNote?: string;
 }
 
 /** Réglages du portail client. */

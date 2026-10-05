@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FactorSelect } from '../components/FactorSelect';
 import { Icon } from '../components/Icon';
 import { Callout, Card, ConfirmButton, Empty, Field, NumberInput, PageHead, ScopeBadge, Stat, Tabs } from '../components/ui';
+import { DropZone, Receipts, UploadQueue } from '../components/upload';
 import { getCategory } from '../data/categories';
 import { DOC_TYPE_ICON } from '../data/docIcons';
 import { DOCUMENT_REQUESTS } from '../data/documentRequests';
@@ -26,16 +27,14 @@ type Filter = DocumentStatus | 'tous';
 export function Documents() {
   const { state, dispatch, factorById } = useStore();
   const { org, entities, documents } = state;
-  const { aiAvailable, aiImages, queue, processFiles, validate, analyse } = useDocumentPipeline();
+  const { aiAvailable, aiImages, queue, receipts, clearReceipts, processFiles, validate, validateMany, analyse } = useDocumentPipeline();
+  const [bulkInfo, setBulkInfo] = useState<string>();
   const [entityId, setEntityId] = useState(entities[0]?.id ?? '');
   const [year, setYear] = useState(org.reportingYear);
   const [autoValidate, setAutoValidate] = useState(true);
   const [useAi, setUseAi] = useState(true);
   const [filter, setFilter] = useState<Filter>(documents.some((d) => d.status === 'a_valider') ? 'a_valider' : 'tous');
   const [openId, setOpenId] = useState<string>();
-  const [drag, setDrag] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
   const entity = entities.find((e) => e.id === entityId) ?? entities[0];
   const run = (files: Parameters<typeof processFiles>[0]) =>
     processFiles(files, { entityId: entity?.id ?? '', year, autoValidate, useAi, source: 'cabinet' });
@@ -91,6 +90,17 @@ export function Documents() {
         icon="file"
         title="Pièces"
         actions={
+          <>
+          {counts.a_valider > 0 && (
+            <button
+              onClick={() => {
+                const n = validateMany(documents.filter((d) => d.status === 'a_valider'));
+                setBulkInfo(n ? `${n} pièce(s) intégrée(s) au bilan.` : 'Aucune pièce complète et sans alerte : ouvrez chaque pièce pour la vérifier.');
+              }}
+            >
+              <Icon name="checks" size={15} /> Intégrer les pièces sans alerte
+            </button>
+          )}
           <Tabs<Filter>
             value={filter}
             onChange={setFilter}
@@ -102,8 +112,10 @@ export function Documents() {
               ['tous', `Toutes (${counts.tous})`],
             ]}
           />
+          </>
         }
       >
+        {bulkInfo && <Callout tone="key">{bulkInfo}</Callout>}
         {list.length === 0 ? (
           <Empty icon={documents.length === 0 ? 'inbox' : 'checkCircle'}>
             {documents.length === 0 ? 'Aucune pièce reçue. Le client dépose ses documents depuis son portail, ou ajoutez-les ci-dessous.' : filter === 'a_valider' ? 'Rien à vérifier : toutes les pièces sont traitées.' : 'Aucune pièce dans cette catégorie.'}
@@ -141,6 +153,7 @@ export function Documents() {
                               {e && <span className="badge neutral">{e.method === 'ia' ? 'lu par Claude' : e.method === 'texte' ? 'extraction automatique' : 'saisie manuelle'}</span>}
                               {d.sample && <span className="badge neutral">exemple</span>}
                             </div>
+                            {d.clientNote && <div className="small" style={{ marginTop: 3 }}><Icon name="edit" size={12} /> Client : {d.clientNote}</div>}
                           </div>
                         </div>
                       </td>
@@ -157,13 +170,18 @@ export function Documents() {
                         )}
                       </td>
                       <td className="num">
-                        {first?.quantity !== undefined ? `${fmt(first.quantity)} ${first.unit ?? f?.unit ?? ''}` : '—'}
+                        {first?.quantity !== undefined ? `${fmt(first.quantity, Math.abs(first.quantity) < 100 ? 3 : 0)} ${first.unit ?? f?.unit ?? ''}` : '—'}
                         {e && e.lines.length > 1 && <div className="small muted">+ {e.lines.length - 1} ligne(s)</div>}
                       </td>
                       <td className="num">{d.status === 'valide' ? fmtMass(docEmissions(d)) : '—'}</td>
                       <td>
                         <span className={`badge ${STATUS_BADGE[d.status]}`}>{STATUS_LABEL[d.status]}</span>
                         {e && d.status === 'a_valider' && <div className="small muted">confiance {Math.round(e.confidence * 100)} %</div>}
+                        {(d.checks ?? []).filter((c) => c.level !== 'info').slice(0, 1).map((c) => (
+                          <div key={c.code} className={`small ${c.level === 'bloquant' ? 'neg' : 'muted'}`} style={{ maxWidth: 260 }}>
+                            <Icon name="alert" size={12} /> {c.message}
+                          </div>
+                        ))}
                       </td>
                       <td className="nowrap">
                         <button className={d.status === 'a_valider' ? 'primary' : ''} onClick={() => setOpenId(d.id)}>
@@ -214,55 +232,13 @@ export function Documents() {
             </label>
           )}
         </div>
-        <div
-          className={`dropzone ${drag ? 'drag' : ''}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDrag(true);
-          }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDrag(false);
-            run([...e.dataTransfer.files]);
-          }}
-          onClick={() => inputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
-        >
-          <Icon name="upload" size={26} />
-          <strong>Glissez les fichiers ici ou cliquez pour les choisir</strong>
-          <span className="small muted">PDF, images (JPG, PNG), TXT, CSV — plusieurs fichiers à la fois</span>
-          <input
-            ref={inputRef}
-            id="doc-files"
-            type="file"
-            multiple
-            hidden
-            accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,application/pdf,image/*,text/plain"
-            onChange={(e) => {
-              const files = [...(e.target.files ?? [])];
-              e.target.value = '';
-              run(files);
-            }}
-          />
-        </div>
-        <div className="row" style={{ marginTop: 10 }}>
-          <button onClick={() => run(SAMPLE_DOCUMENTS)}>
-            <Icon name="sparkles" size={15} /> Charger 9 documents d’exemple
+        <DropZone id="doc-files" onFiles={(f) => run(f)}>
+          <button type="button" className="ghost" onClick={() => run(SAMPLE_DOCUMENTS)}>
+            <Icon name="sparkles" size={15} /> 9 documents d’exemple
           </button>
-          <span className="small muted">Facture STEG, ticket Agil, carte grise, fiche technique, SONEDE, billet Tunisair, climatisation, déchets (contenu fictif).</span>
-        </div>
-        {queue.length > 0 && (
-          <ul className="clean small" style={{ marginTop: 10 }}>
-            {queue.map((q) => (
-              <li key={q.key}>
-                <span className="spinner" aria-hidden /> {q.name} — {q.step}
-              </li>
-            ))}
-          </ul>
-        )}
+        </DropZone>
+        <UploadQueue queue={queue} />
+        <Receipts receipts={receipts} onClear={clearReceipts} />
       </Card>
     </div>
   );
@@ -330,6 +306,22 @@ function ReviewPanel({
       <div className="review-grid">
         <DocPreview doc={doc} />
         <div className="stack" style={{ minWidth: 0 }}>
+          {doc.clientNote && (
+            <Callout tone="info" title="Précision du client">{doc.clientNote}</Callout>
+          )}
+          {(doc.checks ?? []).length > 0 && (
+            <div>
+              <h3>Contrôles de cohérence</h3>
+              <div className="checks-list">
+                {doc.checks!.map((c, i) => (
+                  <div key={i} className={`check-item ${c.level}`}>
+                    <Icon name={c.level === 'info' ? 'info' : 'alert'} size={15} />
+                    <span>{c.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {e.warnings.map((w, i) => (
             <Callout key={i} tone="warn">{w}</Callout>
           ))}

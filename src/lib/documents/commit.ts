@@ -93,33 +93,58 @@ export function mergeVehicle(existing: Vehicle[], e: Extraction, doc: DocumentRe
  * Transforme une extraction validée en données d'activité de l'inventaire, chacune liée
  * à son document (piste d'audit).
  */
+/**
+ * Véhicules cités ligne par ligne (relevés de cartes carburant) et absents du registre :
+ * une fiche minimale est créée pour chacun.
+ */
+export function vehiclesFromLines(existing: Vehicle[], e: Extraction, doc: DocumentRecord, factors: Map<string, EmissionFactor>): Vehicle[] {
+  const out: Vehicle[] = [];
+  for (const l of e.lines) {
+    if (!l.plate) continue;
+    const key = plateKey(l.plate);
+    if (existing.some((v) => plateKey(v.plate) === key) || out.some((v) => plateKey(v.plate) === key)) continue;
+    const f = l.factorId ? factors.get(l.factorId) : undefined;
+    const energy = f?.id === 'petrol_vehicle' ? 'essence' : f?.id === 'lpg_forklift' ? 'gpl' : 'gasoil';
+    out.push({ id: uid(), plate: l.plate, energy, entityId: doc.entityId, documentIds: [doc.id] });
+  }
+  return out;
+}
+
+/**
+ * Transforme une extraction validée en données d'activité de l'inventaire, chacune liée
+ * à son document (piste d'audit), à sa période et, le cas échéant, à son véhicule.
+ */
 export function extractionToActivities(
   doc: DocumentRecord,
   e: Extraction,
   factors: Map<string, EmissionFactor>,
   vehicle?: Vehicle,
+  fleet: Vehicle[] = [],
 ): Activity[] {
-  const year = extractionYear(e, doc.year);
   const checks = checkLines(e, factors).filter((c) => c.ok);
   return checks.map((c) => {
+    const lineVehicle = c.line.plate ? fleet.find((v) => plateKey(v.plate) === plateKey(c.line.plate!)) : vehicle;
     // Pour un plein rattaché à un véhicule connu, le carburant du véhicule prime.
     let factorId = c.factor!.id;
-    if (vehicle && c.factor!.category === 'S1_MOBILE' && FUEL_FACTOR[vehicle.energy]) factorId = FUEL_FACTOR[vehicle.energy]!;
+    if (lineVehicle && c.factor!.category === 'S1_MOBILE' && FUEL_FACTOR[lineVehicle.energy]) factorId = FUEL_FACTOR[lineVehicle.energy]!;
     const amount = c.line.amount ?? (checks.length === 1 ? e.totalAmount : undefined);
+    const periodStart = c.line.periodStart ?? e.periodStart ?? e.date;
+    const periodEnd = c.line.periodEnd ?? e.periodEnd ?? e.date;
+    const y = periodEnd ? Number(periodEnd.slice(0, 4)) : NaN;
     return {
       id: uid(),
       entityId: doc.entityId,
-      year,
+      year: Number.isFinite(y) && y > 1990 && y < 2100 ? y : extractionYear(e, doc.year),
       factorId,
       quantity: c.quantity!,
       cost: amount,
       description: `${c.line.description}${e.supplier ? ` — ${e.supplier}` : ''}`,
       quality: 2,
       evidence: evidenceLabel(doc, e),
-      periodStart: e.periodStart ?? e.date,
-      periodEnd: e.periodEnd ?? e.date,
+      periodStart,
+      periodEnd,
       documentId: doc.id,
-      vehicleId: vehicle?.id,
+      vehicleId: lineVehicle?.id,
     };
   });
 }

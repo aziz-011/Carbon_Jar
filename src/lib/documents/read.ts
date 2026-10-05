@@ -35,6 +35,21 @@ export function isText(file: { name: string; type: string }): boolean {
   return file.type.startsWith('text/') || /\.(txt|csv|tsv)$/i.test(file.name);
 }
 
+export function isSpreadsheet(file: { name: string; type: string }): boolean {
+  return /\.(xlsx|xls|ods)$/i.test(file.name) || /spreadsheet|excel/.test(file.type);
+}
+
+export function isTabularFile(file: { name: string; type: string }): boolean {
+  return isSpreadsheet(file) || /\.(csv|tsv)$/i.test(file.name);
+}
+
+/** Convertit un classeur Excel en texte CSV (séparateur « ; »), une feuille après l'autre. */
+export async function spreadsheetToCsv(data: ArrayBuffer): Promise<string[]> {
+  const XLSX = await import('xlsx');
+  const wb = XLSX.read(new Uint8Array(data), { type: 'array', cellDates: true, dateNF: 'dd/mm/yyyy' });
+  return wb.SheetNames.map((n) => XLSX.utils.sheet_to_csv(wb.Sheets[n], { FS: ';', blankrows: false, dateNF: 'dd/mm/yyyy', rawNumbers: true })).filter((csv) => csv.trim().length > 0);
+}
+
 /** Extrait le texte d'un PDF, page par page, en reconstituant les lignes. */
 export async function extractPdfText(data: ArrayBuffer, maxPages = 10): Promise<{ text: string; pages: number }> {
   const pdfjs = await loadPdfJs();
@@ -85,6 +100,8 @@ export interface ReadResult {
   text: string;
   /** Le PDF ne contient pas de texte exploitable (document scanné). */
   scanned: boolean;
+  /** Feuilles d'un tableau (CSV ou Excel), à analyser ligne par ligne. */
+  sheets?: string[];
 }
 
 /** Lit le texte d'un fichier quand c'est possible localement. */
@@ -93,6 +110,13 @@ export async function readDocumentText(file: File): Promise<ReadResult> {
     const { text } = await extractPdfText(await file.arrayBuffer());
     return { text, scanned: text.replace(/\s/g, '').length < 30 };
   }
-  if (isText(file)) return { text: await file.text(), scanned: false };
+  if (isSpreadsheet(file)) {
+    const sheets = await spreadsheetToCsv(await file.arrayBuffer());
+    return { text: sheets.join('\n\n'), scanned: false, sheets };
+  }
+  if (isText(file)) {
+    const text = await file.text();
+    return { text, scanned: false, sheets: /\.(csv|tsv)$/i.test(file.name) ? [text] : undefined };
+  }
   return { text: '', scanned: isImage(file) };
 }

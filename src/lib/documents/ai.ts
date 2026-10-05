@@ -55,7 +55,10 @@ Analyse le document ci-dessous (nom de fichier : « ${filename} ») et extrais l
 Règles :
 - docType parmi : ${DOC_TYPES.join(', ')}.
 - Pour chaque consommation, une ligne avec la quantité PHYSIQUE (kWh, litres, m³, kg, t, passager.km…) telle qu'écrite sur le document, sans la convertir sauf indication contraire.
-- Pour une facture d'électricité, prends l'énergie consommée sur la période (pas les index, pas les prix unitaires).
+- Pour une facture d'électricité, prends l'énergie ACTIVE consommée sur la période (pas l'énergie réactive kVArh, pas les index bruts, pas les prix unitaires). Si la facture détaille des postes horaires (jour, pointe, soir, nuit), additionne-les sauf si un total est indiqué. Si seule une différence d'index est donnée, multiplie-la par le coefficient du compteur.
+- Convertis MWh en kWh (× 1000) et GJ en kWh (× 277,778) ; indique alors l'unité kWh.
+- Pour un relevé de carte carburant ou un tableau de pleins, fais une ligne par véhicule et par carburant (somme des litres et des montants), avec plate (immatriculation) et la période de la ligne (periodStart, periodEnd).
+- Ne compte pas deux fois une même consommation (ligne de total + lignes de détail).
 - factorId : choisis l'identifiant le plus adapté dans le catalogue ci-dessous ; pour l'électricité du réseau, utilise elec_${country} sauf si le pays est différent.
 - amount : montant de la ligne en dinars si présent (sinon omis). totalAmount : net à payer / total TTC.
 - Dates au format AAAA-MM-JJ. Période de consommation dans periodStart / periodEnd.
@@ -63,7 +66,7 @@ Règles :
 - confidence entre 0 et 1 pour chaque ligne. N'invente aucune valeur : omets un champ illisible et ajoute un avertissement dans warnings.
 
 Réponds UNIQUEMENT avec un objet JSON de la forme :
-{"docType": "...", "supplier": "...", "documentNumber": "...", "date": "AAAA-MM-JJ", "periodStart": "AAAA-MM-JJ", "periodEnd": "AAAA-MM-JJ", "totalAmount": 0, "currency": "TND", "lines": [{"description": "...", "quantity": 0, "unit": "...", "amount": 0, "factorId": "...", "confidence": 0.9}], "vehicle": {"plate": "...", "make": "...", "model": "...", "energy": "gasoil", "fiscalPower": 0, "firstRegistration": "AAAA-MM-JJ", "consumptionL100": 0, "co2gkm": 0}, "warnings": ["..."]}
+{"docType": "...", "supplier": "...", "documentNumber": "...", "date": "AAAA-MM-JJ", "periodStart": "AAAA-MM-JJ", "periodEnd": "AAAA-MM-JJ", "totalAmount": 0, "currency": "TND", "lines": [{"description": "...", "quantity": 0, "unit": "...", "amount": 0, "factorId": "...", "confidence": 0.9, "plate": "...", "periodStart": "AAAA-MM-JJ", "periodEnd": "AAAA-MM-JJ"}], "vehicle": {"plate": "...", "make": "...", "model": "...", "energy": "gasoil", "fiscalPower": 0, "firstRegistration": "AAAA-MM-JJ", "consumptionL100": 0, "co2gkm": 0}, "warnings": ["..."]}
 
 Catalogue des facteurs (id | libellé | unité) :
 ${catalogue(factors)}
@@ -102,6 +105,9 @@ export function sanitizeAiExtraction(raw: unknown, factors: EmissionFactor[]): E
         amount: isNum(o.amount) ? o.amount : undefined,
         factorId,
         confidence: isNum(o.confidence) ? Math.max(0, Math.min(1, o.confidence)) : 0.7,
+        plate: str(o.plate)?.toUpperCase(),
+        periodStart: date(o.periodStart),
+        periodEnd: date(o.periodEnd),
       };
     })
     .filter((l): l is ExtractedLine => !!l);
