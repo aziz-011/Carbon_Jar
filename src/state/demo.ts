@@ -1,4 +1,5 @@
-import type { Activity, Budget, Entity, EsgYear, Organization, Target, Vehicle } from '../domain/types';
+import type { Activity, Budget, DocumentRecord, Entity, EsgYear, Organization, Target, Vehicle } from '../domain/types';
+import { buildDemoDocuments } from './demoDocuments';
 
 /**
  * Jeu de données de démonstration : une entreprise chimique tunisienne (exemple du document
@@ -37,42 +38,57 @@ const a = (year: number, entityId: string, factorId: string, quantity: number, e
   ...extra,
 });
 
-function yearData(year: number, k: number): Activity[] {
+/** Année de référence 2024 : données annuelles consolidées par le cabinet. */
+function baseYear(year: number): Activity[] {
   return [
-    a(year, 'usine', 'ng_kwh', 5200000 * k, { description: 'Gaz naturel — chaudières vapeur', evidence: 'Factures STEG gaz', cost: 470000 * k }),
-    a(year, 'usine', 'process_co2_measured', 850 * k, { description: 'CO2 des réactions chimiques', quality: 1, evidence: 'Mesure CEMS' }),
-    a(year, 'usine', 'diesel_vehicle', 42000 * k, { description: 'Camions de livraison détenus', evidence: 'Cartes carburant' }),
+    a(year, 'usine', 'ng_kwh', 5200000, { description: 'Gaz naturel — chaudières vapeur', evidence: 'Factures STEG gaz', cost: 470000 }),
+    a(year, 'usine', 'process_co2_measured', 850, { description: 'CO2 des réactions chimiques', quality: 1, evidence: 'Mesure CEMS' }),
+    a(year, 'usine', 'diesel_vehicle', 42000, { description: 'Camions de livraison détenus', evidence: 'Cartes carburant' }),
+    a(year, 'siege', 'petrol_vehicle', 1500, { description: 'Véhicule de direction', evidence: 'Cartes carburant' }),
     a(year, 'usine', 'lpg_forklift', 6500, { description: 'Chariots élévateurs GPL', evidence: 'Livraisons GPL' }),
-    a(year, 'usine', 'refrigerant_R-404A', year === 2024 ? 18 : 9, { description: 'Recharge groupe froid R-404A', evidence: 'Registre maintenance' }),
+    a(year, 'usine', 'refrigerant_R-404A', 18, { description: 'Recharge groupe froid R-404A', evidence: 'Registre maintenance' }),
     a(year, 'usine', 'generator_diesel', 1800, { description: 'Groupe électrogène — essais', quality: 3 }),
-    a(year, 'usine', 'elec_TN', 3800000 * k, { description: 'Électricité réacteurs et pompes', evidence: 'Factures STEG', cost: 1140000 * k }),
+    a(year, 'usine', 'elec_TN', 3800000, { description: 'Électricité réacteurs et pompes', evidence: 'Factures STEG', cost: 1140000 }),
     a(year, 'siege', 'elec_TN', 220000, { description: 'Électricité bureaux', evidence: 'Factures STEG' }),
-    a(year, 'siege', 'refrigerant_R-410A', year === 2024 ? 6 : 4, { description: 'Recharge climatisation bureaux R-410A', evidence: 'Registre maintenance' }),
-    a(year, 'usine', 'petrochem', 2100000 * k, { description: 'Matières premières pétrochimiques', quality: 3, evidence: 'ERP achats' }),
+    a(year, 'siege', 'refrigerant_R-410A', 6, { description: 'Recharge climatisation bureaux R-410A', evidence: 'Registre maintenance' }),
+    a(year, 'usine', 'petrochem', 2100000, { description: 'Matières premières pétrochimiques', quality: 3, evidence: 'ERP achats' }),
     a(year, 'usine', 'steel', 120000, { description: 'Acier (cuves, tuyauterie)', quality: 3 }),
-    a(year, 'usine', 'freight_road', 1900000 * k, { description: 'Transport par prestataire externe', quality: 3 }),
+    a(year, 'usine', 'water', 19200, { description: 'Eau potable', evidence: 'Factures SONEDE' }),
     a(year, 'usine', 'waste_landfill', 140, { description: 'Déchets industriels banals', evidence: 'Bordereaux' }),
     a(year, 'siege', 'flight_medium', 180000, { description: 'Déplacements professionnels avion', evidence: 'Agence de voyage' }),
-    a(year, 'siege', 'train_avg', 40000, { description: 'Déplacements professionnels train (SNCFT)' }),
-    a(year, 'usine', 'commute_car', 1350000, { description: 'Trajets domicile-travail (enquête)', quality: 4 }),
-    a(year, 'usine', 'spend_services', 2200000, { description: 'Prestations de services', quality: 4, cost: 2200000 }),
-    a(year, 'jv', 'ng_kwh', 2400000, { description: 'Gaz naturel coentreprise', quality: 2 }),
-    a(year, 'jv', 'elec_TN', 1500000, { description: 'Électricité coentreprise', quality: 2 }),
+    ...common(year, 1),
   ];
 }
 
-export const DEMO_ACTIVITIES: Activity[] = [...yearData(2024, 1), ...yearData(2025, 0.96)];
+/** Postes estimés ou consolidés par le cabinet (sans pièce déposée par le client). */
+function common(year: number, k: number): Activity[] {
+  return [
+    a(year, 'usine', 'freight_road', 1900000 * k, { description: 'Transport par prestataire externe', quality: 3, evidence: 'Lettres de voiture du transporteur' }),
+    a(year, 'siege', 'train_avg', 40000, { description: 'Déplacements professionnels train (SNCFT)', evidence: 'Notes de frais' }),
+    a(year, 'usine', 'commute_car', 1350000, { description: 'Trajets domicile-travail (enquête)', quality: 4, evidence: 'Enquête mobilité salariés' }),
+    a(year, 'usine', 'spend_services', 2200000, { description: 'Prestations de services', quality: 4, cost: 2200000, evidence: 'Grand livre comptable' }),
+    a(year, 'jv', 'ng_kwh', 2400000, { description: 'Gaz naturel coentreprise', quality: 2, evidence: 'Reporting de la coentreprise' }),
+    a(year, 'jv', 'elec_TN', 1500000, { description: 'Électricité coentreprise', quality: 2, evidence: 'Reporting de la coentreprise' }),
+  ];
+}
+
+const DOCS_2025 = buildDemoDocuments();
+
+export const DEMO_DOCUMENTS: DocumentRecord[] = DOCS_2025.documents;
+
+export const DEMO_ACTIVITIES: Activity[] = [
+  ...baseYear(2024),
+  ...DOCS_2025.activities,
+  a(2025, 'usine', 'process_co2_measured', 816, { description: 'CO2 des réactions chimiques', quality: 1, evidence: 'Mesure en continu (CEMS) — rapport annuel' }),
+  ...common(2025, 0.96),
+];
 
 export const DEMO_TARGETS: Target[] = [
   { id: 't1', name: 'Scopes 1+2 : −42 % d’ici 2030', type: 'absolute', scopes: [1, 2], baseYear: 2024, targetYear: 2030, reductionPct: 42, scope2Method: 'market' },
   { id: 't2', name: 'Intensité Scope 1+2+3 : −30 % par tonne', type: 'intensity', scopes: [1, 2, 3], baseYear: 2024, targetYear: 2030, reductionPct: 30, scope2Method: 'location' },
 ];
 
-export const DEMO_VEHICLES: Vehicle[] = [
-  { id: 'v1', plate: '210 TU 4512', make: 'IVECO', model: 'Eurocargo', energy: 'gasoil', fiscalPower: 18, consumptionL100: 22, annualKm: 62000, entityId: 'usine', documentIds: [] },
-  { id: 'v2', plate: '188 TU 903', make: 'RENAULT', model: 'Master', energy: 'gasoil', fiscalPower: 10, consumptionL100: 9.5, annualKm: 41000, entityId: 'usine', documentIds: [] },
-  { id: 'v3', plate: '231 TU 77', make: 'PEUGEOT', model: '308', energy: 'essence', fiscalPower: 7, consumptionL100: 6.4, annualKm: 23000, entityId: 'siege', documentIds: [] },
-];
+export const DEMO_VEHICLES: Vehicle[] = DOCS_2025.vehicles;
 
 /** Budgets annuels : consommé / restant / projection. */
 export const DEMO_BUDGETS: Budget[] = [
@@ -83,6 +99,34 @@ export const DEMO_BUDGETS: Budget[] = [
 ];
 
 export const DEMO_ESG: Record<number, EsgYear> = {
+  2024: {
+    headcount: 207,
+    womenPct: 29,
+    womenManagersPct: 19,
+    trainingHoursPerEmployee: 14,
+    lostTimeAccidents: 6,
+    frequencyRate: 14.2,
+    severityRate: 0.32,
+    turnoverPct: 8.9,
+    disabledPct: 1.0,
+    localPurchasingPct: 58,
+    communityInvestment: 30000,
+    waterM3: 19200,
+    wasteTonnes: 140,
+    wasteRecycledPct: 0,
+    boardMembers: 7,
+    independentBoardPct: 14,
+    womenBoardPct: 14,
+    ethicsCode: true,
+    antiCorruption: false,
+    csrPolicy: false,
+    esgCommittee: false,
+    whistleblowing: false,
+    iso14001: true,
+    iso45001: false,
+    iso50001: false,
+    dataPrivacy: true,
+  },
   2025: {
     headcount: 214,
     womenPct: 31,
@@ -104,11 +148,15 @@ export const DEMO_ESG: Record<number, EsgYear> = {
     ethicsCode: true,
     antiCorruption: true,
     csrPolicy: true,
-    esgCommittee: false,
-    whistleblowing: false,
+    esgCommittee: true,
+    whistleblowing: true,
     iso14001: true,
-    iso45001: false,
+    iso45001: true,
     iso50001: false,
     dataPrivacy: true,
+    executiveSummary:
+      `En 2025, ChimieDémo Tunisie SA a établi son bilan carbone complet à partir de ${DOCS_2025.documents.length} pièces justificatives (factures STEG, relevés de cartes carburant, cartes grises, registres de fluides, factures SONEDE, bordereaux de déchets). Les émissions directes et indirectes liées à l’énergie (Scopes 1 et 2) reculent par rapport à 2024, portées par la baisse de 4 % de la consommation de gaz et d’électricité de l’usine de Sfax et par la réduction de moitié des fuites de fluide frigorigène. Les achats de matières premières pétrochimiques restent le premier poste du Scope 3 et la priorité du plan d’action fournisseurs.`,
+    commitments:
+      '1. Installer 1,2 MWc de panneaux photovoltaïques en toiture de l’usine de Sfax d’ici 2027 (≈ 1 800 MWh/an autoproduits).\n2. Récupérer la chaleur des purges des chaudières vapeur (−8 % de gaz naturel).\n3. Remplacer le R-404A par un fluide à faible PRG (R-448A puis CO2 transcritique).\n4. Former les chauffeurs à l’écoconduite et renouveler deux camions par des modèles Euro VI.\n5. Engager une certification ISO 50001 du système de management de l’énergie en 2026.',
   },
 };

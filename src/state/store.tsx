@@ -4,7 +4,7 @@ import { DEFAULT_FACTORS } from '../data/emissionFactors';
 import { computeInventory, type Inventory } from '../lib/calc';
 import { plateKey } from '../lib/documents/commit';
 import { uid } from '../lib/format';
-import { DEMO_ACTIVITIES, DEMO_BUDGETS, DEMO_ENTITIES, DEMO_ESG, DEMO_ORG, DEMO_TARGETS, DEMO_VEHICLES } from './demo';
+import { DEMO_ACTIVITIES, DEMO_BUDGETS, DEMO_DOCUMENTS, DEMO_ENTITIES, DEMO_ESG, DEMO_ORG, DEMO_TARGETS, DEMO_VEHICLES } from './demo';
 
 /** Données d'un client (une organisation dont on établit le bilan). */
 export interface AppState {
@@ -33,7 +33,12 @@ export interface Workspace {
   firmName: string;
   activeId: string;
   clients: ClientRecord[];
+  /** Version du dossier de démonstration chargée dans cet espace. */
+  demoVersion?: number;
 }
+
+/** Incrémenté quand le dossier de démonstration est enrichi : il est alors rechargé une fois. */
+export const DEMO_VERSION = 2;
 
 export type Action =
   | { type: 'org'; patch: Partial<Organization> }
@@ -77,11 +82,16 @@ export const DEMO_STATE: AppState = {
   activities: DEMO_ACTIVITIES,
   targets: DEMO_TARGETS,
   customFactors: [],
-  documents: [],
+  documents: DEMO_DOCUMENTS,
   vehicles: DEMO_VEHICLES,
   budgets: DEMO_BUDGETS,
   esg: DEMO_ESG,
-  portal: { notApplicable: ['achats'], reportPublished: false, message: 'Merci de déposer vos factures 2025. Nous revenons vers vous dès réception.' },
+  portal: {
+    notApplicable: [],
+    reportPublished: true,
+    publishedAt: '2026-03-12T10:00:00.000Z',
+    message: 'Votre bilan carbone 2025 est finalisé et votre rapport ESG est disponible. Pensez à déposer vos factures 2026 au fil de l’eau.',
+  },
 };
 
 export function emptyState(name = 'Nouveau client'): AppState {
@@ -119,6 +129,7 @@ export function demoWorkspace(): Workspace {
   return {
     firmName: 'Mon cabinet de conseil',
     activeId: 'demo',
+    demoVersion: DEMO_VERSION,
     clients: [{ id: 'demo', createdAt: new Date().toISOString(), state: DEMO_STATE }],
   };
 }
@@ -251,6 +262,12 @@ function load(): Workspace {
       const ws = JSON.parse(raw) as Workspace;
       if (Array.isArray(ws.clients) && ws.clients.length) {
         const clients = ws.clients.map((c) => ({ ...c, state: normalizeState(c.state) }));
+        if ((ws.demoVersion ?? 1) < DEMO_VERSION) {
+          // Nouvelle version du dossier de démonstration : il remplace l'ancien et s'ouvre ; les autres clients sont conservés.
+          const demo: ClientRecord = { id: 'demo', createdAt: new Date().toISOString(), state: DEMO_STATE };
+          const others = clients.filter((c) => c.id !== 'demo');
+          return { ...ws, demoVersion: DEMO_VERSION, clients: [demo, ...others], activeId: 'demo' };
+        }
         return { ...ws, clients, activeId: clients.some((c) => c.id === ws.activeId) ? ws.activeId : clients[0].id };
       }
     }
