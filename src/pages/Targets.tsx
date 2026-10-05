@@ -121,7 +121,7 @@ export function Targets() {
                   <Tooltip formatter={(v: number) => `${fmt(v, 3)} ${unit}`} />
                   <Legend />
                   <Line type="linear" dataKey="trajectoire" stroke={cssVar('--emerald', '#059669')} strokeWidth={2.5} strokeDasharray="6 4" dot={false} connectNulls />
-                  <Scatter dataKey="réel" fill={cssVar('--blue', '#1e4e8c')} />
+                  <Scatter dataKey="réel" fill={cssVar('--chart-red', '#d62828')} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

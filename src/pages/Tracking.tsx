@@ -123,8 +123,8 @@ export function Tracking() {
               <YAxis yAxisId="c" orientation="right" tick={{ fill: axis, fontSize: 11 }} tickFormatter={(v) => fmt(v / 1000)} />
               <Tooltip formatter={(v: number, n: string) => (n === 'MWh' ? `${fmt(v, 1)} MWh` : fmtMoney(v, org.currency))} />
               <Legend />
-              <Line yAxisId="e" dataKey="mwh" name="MWh" stroke={cssVar('--blue', '#1e4e8c')} strokeWidth={2} dot={false} isAnimationActive={false} />
-              <Line yAxisId="c" dataKey="cost" name={`Dépenses (k${org.currency})`} stroke={cssVar('--s3', '#a3aeba')} strokeWidth={2} dot={false} isAnimationActive={false} />
+              <Line yAxisId="e" dataKey="mwh" name="MWh" stroke={cssVar('--s2', '#f07f1a')} strokeWidth={2} dot={false} isAnimationActive={false} />
+              <Line yAxisId="c" dataKey="cost" name={`Dépenses (k${org.currency})`} stroke={cssVar('--chart-red', '#d62828')} strokeWidth={2} dot={false} isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         </Card>

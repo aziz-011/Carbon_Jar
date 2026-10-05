@@ -19,7 +19,7 @@ import { useStore } from '../state/store';
 import { APPROACHES } from './Boundary';
 
 /** Couleurs du document imprimé (indépendantes du thème de l'écran). */
-const PAPER = { s1: '#1e4e8c', s2: '#5b8fc7', s3: '#a3aeba', ink: '#2b2f2d', muted: '#666b68', rule: '#e7dfce', forest: '#1e3a5f', emerald: '#059669' };
+const PAPER = { s1: '#b23a25', s2: '#f07f1a', s3: '#f2b705', ink: '#2b2f2d', muted: '#666b68', rule: '#e7dfce', forest: '#1e3a5f', emerald: '#059669' };
 const SCOPE_FILL: Record<Scope, string> = { 1: PAPER.s1, 2: PAPER.s2, 3: PAPER.s3 };
 
 const SECTOR_LABELS: Record<string, string> = {
@@ -499,7 +499,7 @@ function ScopeBarPaper({ values }: { values: Record<Scope, number> }) {
       <div className="bar-track">
         {([1, 2, 3] as Scope[]).map((s) =>
           values[s] > 0 ? (
-            <span key={s} style={{ width: `${(values[s] / total) * 100}%`, background: SCOPE_FILL[s] }}>
+            <span key={s} style={{ width: `${(values[s] / total) * 100}%`, background: SCOPE_FILL[s], color: s === 1 ? '#fff' : '#2b2010' }}>
               {values[s] / total >= 0.08 ? `${Math.round((values[s] / total) * 100)} %` : ''}
             </span>
           ) : null,
