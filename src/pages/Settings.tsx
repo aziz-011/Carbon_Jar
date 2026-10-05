@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Callout, Card, ConfirmButton, Field, NumberInput, PageHead } from '../components/ui';
 import { GWP_SET_LABELS } from '../data/gwp';
 import type { GwpSet, Sector } from '../domain/types';
-import { DEMO_STATE, EMPTY_STATE, useStore, type AppState } from '../state/store';
+import { DEMO_STATE, emptyState, useStore, type AppState } from '../state/store';
 
 const SECTORS: Array<[Sector, string]> = [
   ['industrie', 'Industrie manufacturière'],
@@ -26,7 +26,7 @@ export function Settings() {
     try {
       const data = JSON.parse(await file.text()) as AppState;
       if (!data.org || !Array.isArray(data.activities)) throw new Error('format');
-      dispatch({ type: 'reset', state: { ...EMPTY_STATE, ...data } });
+      dispatch({ type: 'reset', state: { ...emptyState(), ...data } });
       setMessage({ tone: 'key', text: 'Données restaurées.' });
     } catch {
       setMessage({ tone: 'critique', text: 'Fichier invalide : utilisez une sauvegarde JSON exportée depuis la page Rapport.' });
@@ -98,13 +98,13 @@ export function Settings() {
       <Card title="Données">
         <div className="row">
           <label className="btn">
-            ⬆ Restaurer une sauvegarde JSON
+            ⬆ Restaurer une sauvegarde du client (JSON)
             <input type="file" accept="application/json,.json" hidden onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} />
           </label>
           <ConfirmButton question="Remplacer les données actuelles par la démonstration ?" onConfirm={() => dispatch({ type: 'reset', state: DEMO_STATE })}>
             Charger la démonstration
           </ConfirmButton>
-          <ConfirmButton className="danger" question="Effacer toutes les données ?" onConfirm={() => dispatch({ type: 'reset', state: EMPTY_STATE })}>
+          <ConfirmButton className="danger" question="Effacer toutes les données de ce client ?" onConfirm={() => dispatch({ type: 'reset', state: emptyState(org.name) })}>
             Repartir de zéro
           </ConfirmButton>
         </div>

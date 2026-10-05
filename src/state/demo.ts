@@ -1,4 +1,4 @@
-import type { Activity, Entity, Organization, Target } from '../domain/types';
+import type { Activity, Budget, Entity, EsgYear, Organization, Target, Vehicle } from '../domain/types';
 
 /**
  * Jeu de données de démonstration : une entreprise chimique tunisienne (exemple du document
@@ -67,3 +67,48 @@ export const DEMO_TARGETS: Target[] = [
   { id: 't1', name: 'Scopes 1+2 : −42 % d’ici 2030', type: 'absolute', scopes: [1, 2], baseYear: 2024, targetYear: 2030, reductionPct: 42, scope2Method: 'market' },
   { id: 't2', name: 'Intensité Scope 1+2+3 : −30 % par tonne', type: 'intensity', scopes: [1, 2, 3], baseYear: 2024, targetYear: 2030, reductionPct: 30, scope2Method: 'location' },
 ];
+
+export const DEMO_VEHICLES: Vehicle[] = [
+  { id: 'v1', plate: '210 TU 4512', make: 'IVECO', model: 'Eurocargo', energy: 'gasoil', fiscalPower: 18, consumptionL100: 22, annualKm: 62000, entityId: 'usine', documentIds: [] },
+  { id: 'v2', plate: '188 TU 903', make: 'RENAULT', model: 'Master', energy: 'gasoil', fiscalPower: 10, consumptionL100: 9.5, annualKm: 41000, entityId: 'usine', documentIds: [] },
+  { id: 'v3', plate: '231 TU 77', make: 'PEUGEOT', model: '308', energy: 'essence', fiscalPower: 7, consumptionL100: 6.4, annualKm: 23000, entityId: 'siege', documentIds: [] },
+];
+
+/** Budgets annuels : consommé / restant / projection. */
+export const DEMO_BUDGETS: Budget[] = [
+  { id: 'b1', name: 'Électricité STEG', year: 2025, metric: 'quantity', factorIds: ['elec_TN'], limit: 4_200_000 },
+  { id: 'b2', name: 'Gazole de la flotte', year: 2025, metric: 'quantity', factorIds: ['diesel_vehicle'], limit: 45_000 },
+  { id: 'b3', name: 'Émissions Scopes 1 + 2', year: 2025, metric: 'emissions', scopes: [1, 2], limit: 4_000 },
+  { id: 'b4', name: 'Budget énergie (TND)', year: 2025, metric: 'cost', scopes: [1, 2], limit: 2_400_000 },
+];
+
+export const DEMO_ESG: Record<number, EsgYear> = {
+  2025: {
+    headcount: 214,
+    womenPct: 31,
+    womenManagersPct: 22,
+    trainingHoursPerEmployee: 18,
+    lostTimeAccidents: 4,
+    frequencyRate: 9.8,
+    severityRate: 0.21,
+    turnoverPct: 7.5,
+    disabledPct: 1.4,
+    localPurchasingPct: 64,
+    communityInvestment: 45000,
+    waterM3: 18500,
+    wasteTonnes: 140,
+    wasteRecycledPct: 38,
+    boardMembers: 7,
+    independentBoardPct: 29,
+    womenBoardPct: 14,
+    ethicsCode: true,
+    antiCorruption: true,
+    csrPolicy: true,
+    esgCommittee: false,
+    whistleblowing: false,
+    iso14001: true,
+    iso45001: false,
+    iso50001: false,
+    dataPrivacy: true,
+  },
+};

@@ -7,6 +7,7 @@ import { computeActivity } from '../lib/calc';
 import { classify } from '../lib/classifier';
 import { CSV_TEMPLATE, downloadFile, mapRows, parseCsv, type ImportedRow } from '../lib/csv';
 import { fmt, fmtMoney, uid } from '../lib/format';
+import { formulaText } from '../lib/tracking';
 import { useStore } from '../state/store';
 
 const QUALITY_LABELS: Record<DataQuality, string> = {
@@ -181,6 +182,7 @@ function ManualEntry() {
             {preview.consolidationShare < 1 && <span className="badge warn">Consolidé à {fmt(preview.consolidationShare * 100)} %</span>}
           </div>
         )}
+        {preview && <div className="formula-line">{formulaText(preview, org.gwpSet)}</div>}
         {preview?.note && <p className="small muted" style={{ marginTop: 8 }}>{preview.note}</p>}
 
         <div className="row" style={{ marginTop: 14 }}>
@@ -240,7 +242,9 @@ function ManualEntry() {
                     <div className="small muted">
                       {r.factor.label} · {r.entity?.name}
                       {r.activity.evidence ? ` · 📎 ${r.activity.evidence}` : ''}
+                      {r.activity.periodStart && r.activity.periodEnd ? ` · ${r.activity.periodStart} → ${r.activity.periodEnd}` : ''}
                     </div>
+                    <div className="formula-line">{formulaText(r, org.gwpSet)}</div>
                   </td>
                   <td>
                     <ScopeBadge scope={r.scope} />
@@ -252,7 +256,7 @@ function ManualEntry() {
                     {fmt(r.activity.quantity)} {r.factor.unit}
                   </td>
                   <td className="num">
-                    {fmt(r.kgCO2e / 1000, 2)}
+                    {fmt(r.kgCO2e / 1000, 3)}
                     {r.scope === 2 && r.kgCO2eMarket !== r.kgCO2e && <div className="small muted">MB {fmt(r.kgCO2eMarket / 1000, 2)}</div>}
                   </td>
                   <td className="num">{r.energyKwh ? fmt(r.energyKwh / 1000) : '—'}</td>

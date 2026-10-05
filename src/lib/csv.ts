@@ -120,9 +120,34 @@ export interface ExportRequest {
  * Propose un fichier à l'utilisateur. Hors cadre intégré, le fichier est téléchargé ;
  * dans un cadre intégré, le contenu est affiché dans un panneau avec un bouton « Copier ».
  */
+interface DownloadsApi {
+  save(req: { filename: string; data: string | Blob }): Promise<{ status: string }>;
+}
+
+/** Capacité « downloads » de l'Artifact claude.ai (null ailleurs). */
+async function getDownloads(): Promise<DownloadsApi | null> {
+  const rt = (window as unknown as { claude?: { use(name: string): Promise<unknown> } }).claude;
+  if (!rt?.use) return null;
+  try {
+    return (await rt.use('downloads')) as DownloadsApi | null;
+  } catch {
+    return null;
+  }
+}
+
 export function downloadFile(filename: string, content: string, mime = 'text/csv;charset=utf-8') {
   if (isEmbedded()) {
-    window.dispatchEvent(new CustomEvent<ExportRequest>('carbonjar:export', { detail: { filename, content } }));
+    // Sur claude.ai : enregistrement via la plateforme ; sinon, panneau « Copier ».
+    const showPanel = () => window.dispatchEvent(new CustomEvent<ExportRequest>('carbonjar:export', { detail: { filename, content } }));
+    getDownloads().then((d) => {
+      if (!d) {
+        showPanel();
+        return;
+      }
+      d.save({ filename, data: mime.startsWith('text/csv') ? '\ufeff' + content : content }).catch((e: { code?: string }) => {
+        if (e?.code !== 'declined') showPanel();
+      });
+    }, showPanel);
     return;
   }
   const blob = new Blob(['﻿' + content], { type: mime });

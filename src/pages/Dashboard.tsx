@@ -82,9 +82,15 @@ export function Dashboard() {
         }
       />
 
+      {state.documents.some((d) => d.status === 'a_valider') && (
+        <Callout tone="attention" title="Documents en attente">
+          {state.documents.filter((d) => d.status === 'a_valider').length} document(s) déposé(s) attendent votre vérification avant d’entrer dans l’inventaire. <Link to="/documents">Les vérifier →</Link>
+        </Callout>
+      )}
+
       {inv.results.length === 0 && (
         <Callout tone="info" title="Aucune donnée pour cette année">
-          Commencez par <Link to="/donnees">saisir ou importer vos données d’activité</Link>, ou chargez le jeu de démonstration depuis les <Link to="/parametres">paramètres</Link>.
+          Commencez par <Link to="/documents">déposer les factures du client</Link> ou <Link to="/donnees">saisir vos données d’activité</Link>, ou chargez le jeu de démonstration depuis les <Link to="/parametres">paramètres</Link>.
         </Callout>
       )}
 

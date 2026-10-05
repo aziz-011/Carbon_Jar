@@ -116,6 +116,13 @@ export interface Activity {
   instrumentFactor?: number;
   /** Énergie achetée revendue à des utilisateurs finaux : exclue du Scope 2 (bascule en Scope 3). */
   resold?: boolean;
+  /** Période de consommation (AAAA-MM-JJ), pour le suivi mensuel. */
+  periodStart?: string;
+  periodEnd?: string;
+  /** Document justificatif à l'origine de la donnée. */
+  documentId?: string;
+  /** Véhicule concerné (combustion mobile). */
+  vehicleId?: string;
 }
 
 export type ConsolidationApproach = 'equity' | 'financial' | 'operational';
@@ -191,4 +198,151 @@ export interface ActivityResult {
   costEstimated: boolean;
   /** Note expliquant un reclassement (ex. électricité revendue → Scope 3). */
   note?: string;
+}
+
+// ───────────────────────── Documents et pièces justificatives ─────────────────────────
+
+/** Types de documents reconnus par la plateforme. */
+export type DocType =
+  | 'facture_electricite'
+  | 'facture_gaz'
+  | 'facture_carburant'
+  | 'carte_grise'
+  | 'fiche_vehicule'
+  | 'facture_eau'
+  | 'billet_transport'
+  | 'bordereau_dechets'
+  | 'registre_fluides'
+  | 'facture_achat'
+  | 'autre';
+
+export type VehicleEnergy = 'gasoil' | 'essence' | 'gpl' | 'electrique' | 'hybride' | 'autre';
+
+/** Ligne de consommation extraite d'un document, proposée pour l'inventaire. */
+export interface ExtractedLine {
+  description: string;
+  quantity?: number;
+  unit?: string;
+  amount?: number;
+  factorId?: string;
+  /** Confiance 0–1 de la classification. */
+  confidence: number;
+}
+
+export interface ExtractedVehicle {
+  plate?: string;
+  make?: string;
+  model?: string;
+  energy?: VehicleEnergy;
+  fiscalPower?: number;
+  firstRegistration?: string;
+  vin?: string;
+  /** Consommation normalisée (L/100 km ou kWh/100 km pour l'électrique). */
+  consumptionL100?: number;
+  /** Émissions homologuées (g CO2/km). */
+  co2gkm?: number;
+}
+
+export interface Extraction {
+  docType: DocType;
+  /** Méthode : lecture par Claude (IA), analyse du texte, ou saisie manuelle. */
+  method: 'ia' | 'texte' | 'manuel';
+  supplier?: string;
+  documentNumber?: string;
+  /** Date du document (AAAA-MM-JJ). */
+  date?: string;
+  /** Période de consommation (AAAA-MM-JJ). */
+  periodStart?: string;
+  periodEnd?: string;
+  totalAmount?: number;
+  currency?: string;
+  lines: ExtractedLine[];
+  vehicle?: ExtractedVehicle;
+  confidence: number;
+  warnings: string[];
+}
+
+export type DocumentStatus = 'a_valider' | 'valide' | 'rejete' | 'erreur';
+
+export interface DocumentRecord {
+  id: string;
+  name: string;
+  size: number;
+  mime: string;
+  uploadedAt: string;
+  entityId: string;
+  year: number;
+  status: DocumentStatus;
+  /** Texte extrait (tronqué) pour l'analyse et la piste d'audit. */
+  text?: string;
+  extraction?: Extraction;
+  /** Données d'activité créées à la validation. */
+  activityIds: string[];
+  vehicleId?: string;
+  error?: string;
+  /** Document d'exemple fourni avec la démonstration. */
+  sample?: boolean;
+}
+
+export interface Vehicle {
+  id: string;
+  plate: string;
+  make?: string;
+  model?: string;
+  energy: VehicleEnergy;
+  fiscalPower?: number;
+  firstRegistration?: string;
+  consumptionL100?: number;
+  co2gkm?: number;
+  /** Kilométrage annuel (pour l'estimation lorsque les factures de carburant manquent). */
+  annualKm?: number;
+  entityId: string;
+  documentIds: string[];
+}
+
+/** Budget de consommation ou d'émissions : consommé / restant / projection. */
+export interface Budget {
+  id: string;
+  name: string;
+  year: number;
+  metric: 'emissions' | 'energy' | 'cost' | 'quantity';
+  /** Filtre sur les scopes (émissions, énergie, coût). */
+  scopes?: Scope[];
+  /** Filtre sur les facteurs (obligatoire pour « quantité » : kWh, L…). */
+  factorIds?: string[];
+  limit: number;
+}
+
+/** Indicateurs sociaux et de gouvernance pour le rapport ESG (référentiels GRI / ESRS). */
+export interface EsgYear {
+  headcount?: number;
+  womenPct?: number;
+  womenManagersPct?: number;
+  trainingHoursPerEmployee?: number;
+  lostTimeAccidents?: number;
+  frequencyRate?: number;
+  severityRate?: number;
+  turnoverPct?: number;
+  disabledPct?: number;
+  localPurchasingPct?: number;
+  communityInvestment?: number;
+  waterM3?: number;
+  wasteTonnes?: number;
+  wasteRecycledPct?: number;
+  boardMembers?: number;
+  independentBoardPct?: number;
+  womenBoardPct?: number;
+  ethicsCode?: boolean;
+  antiCorruption?: boolean;
+  csrPolicy?: boolean;
+  esgCommittee?: boolean;
+  whistleblowing?: boolean;
+  iso14001?: boolean;
+  iso45001?: boolean;
+  iso50001?: boolean;
+  dataPrivacy?: boolean;
+  /** Synthèse exécutive rédigée (modifiable). */
+  executiveSummary?: string;
+  /** Engagements et prochaines étapes. */
+  commitments?: string;
 }

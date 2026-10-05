@@ -13,6 +13,12 @@ import { Report } from './pages/Report';
 import { Factors } from './pages/Factors';
 import { Guide } from './pages/Guide';
 import { Settings } from './pages/Settings';
+import { Documents } from './pages/Documents';
+import { Fleet } from './pages/Fleet';
+import { Tracking } from './pages/Tracking';
+import { EsgData } from './pages/EsgData';
+import { EsgReport } from './pages/EsgReport';
+import { Clients } from './pages/Clients';
 
 export function App() {
   return (
@@ -33,6 +39,12 @@ export function App() {
             <Route path="/guide" element={<Guide />} />
             <Route path="/guide/:id" element={<Guide />} />
             <Route path="/parametres" element={<Settings />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/flotte" element={<Fleet />} />
+            <Route path="/suivi" element={<Tracking />} />
+            <Route path="/esg" element={<EsgData />} />
+            <Route path="/rapport-esg" element={<EsgReport />} />
+            <Route path="/clients" element={<Clients />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>

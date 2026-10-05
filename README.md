@@ -35,6 +35,19 @@ Après une modification, régénérez le fichier prêt à ouvrir avec `npm run b
 
 Les données sont enregistrées dans le navigateur (localStorage). Il n’y a pas de serveur. Pour sauvegarder ou restaurer les données, utilisez un fichier JSON : l’export se fait depuis la page **Rapport** et l’import depuis la page **Paramètres**. Un jeu de démonstration (une entreprise chimique) est chargé au premier lancement.
 
+## Version cabinet de conseil
+
+- **Clients** : un dossier par client (sites, documents, inventaire, flotte, budgets, objectifs, rapport). Sauvegarde et restauration de tous les dossiers en JSON.
+- **Documents** : dépôt de factures (STEG électricité et gaz, carburant, SONEDE), tickets, cartes grises, fiches techniques, billets d’avion, bordereaux de déchets, rapports de climatisation.
+  - PDF avec texte : lus dans le navigateur (pdf.js), sans envoi externe.
+  - Scans et photos : lus par Claude lorsque la plateforme est ouverte sur claude.ai (capacité `sample`) ; sinon, saisie assistée.
+  - Chaque pièce est reconnue (type, fournisseur, numéro, période, montant, quantités, immatriculation), classée dans le bon scope, puis validée automatiquement si la confiance dépasse 80 %, ou placée dans la file « À valider ».
+  - Chaque donnée garde le lien vers sa pièce (piste d’audit).
+- **Flotte** : registre alimenté par les cartes grises et fiches techniques ; carburant réel ou estimation kilométrage × consommation.
+- **Suivi** : consommé, restant et projection de fin d’année par budget (kWh, litres, t CO2e, TND) et répartition mensuelle selon les périodes des factures.
+- **Rapport ESG** : couverture, synthèse exécutive, périmètre, méthodologie, environnement (scopes, catégories, gaz, énergie, évolution, intensité, eau, déchets, objectifs, plan d’action), social, gouvernance, engagements, annexes (correspondance GRI / ESRS, facteurs utilisés, pièces justificatives). Export HTML et impression PDF.
+- **Vérification des calculs** : chaque donnée affiche son calcul, par exemple `1 460 kWh × 0,58 kg CO2e/kWh = 846,8 kg CO2e`.
+
 ## Fonctionnalités
 
 | Module | Rôle |
