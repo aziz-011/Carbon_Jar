@@ -2,6 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from 'recharts';
 import { Icon, type IconName } from '../components/Icon';
+import { LogoMark } from '../components/Logo';
 import { Callout, PageHead } from '../components/ui';
 import { categoriesOfScope, getCategory } from '../data/categories';
 import { GRID_ZONES } from '../data/emissionFactors';
@@ -181,9 +182,7 @@ export function EsgReportView({ mode }: { mode: 'cabinet' | 'client' }) {
           <header className="rpt-cover">
             <div className="rpt-cover-top">
               <span className="firm">
-                <span>
-                  <Icon name="leaf" size={18} />
-                </span>
+                <LogoMark size={34} />
                 {workspace.firmName}
               </span>
               <span>Rapport de durabilité</span>

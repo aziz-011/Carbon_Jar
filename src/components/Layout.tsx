@@ -4,6 +4,7 @@ import { collectionRate, portalTabs, requestProgress } from '../lib/progress';
 import { useStore } from '../state/store';
 import { ExportPanel } from './ExportPanel';
 import { Icon, type IconName } from './Icon';
+import { Logo } from './Logo';
 
 interface NavItem {
   to: string;
@@ -92,15 +93,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <aside className={`sidebar ${open ? 'open' : ''}`}>
-        <div className="brand">
-          <span className="brand-mark" aria-hidden>
-            <Icon name="leaf" size={20} />
-          </span>
-          <div>
-            <div className="brand-name">Carbon Jar</div>
-            <small>{portal ? 'Espace client' : workspace.firmName}</small>
-          </div>
-        </div>
+        <Logo subtitle={portal ? 'Espace client' : workspace.firmName} />
 
         <div className="mode-switch" role="tablist" aria-label="Espace">
           <Link to="/" className={portal ? '' : 'active'} role="tab" aria-selected={!portal}>

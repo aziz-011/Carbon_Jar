@@ -566,3 +566,6 @@ ol.steps { list-style: none; padding: 0; margin: 0; }
 .checklist li .icon { color: var(--accent); margin-top: 3px; }
 @media (max-width: 860px) { .savings-hero, .gain-banner, .money-grid { grid-template-columns: minmax(0, 1fr); } .big-number { font-size: 2.6rem; } }
 .gain-teaser { margin-top: 12px; background: var(--accent-soft); } .gain-teaser:hover { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+.brand-name span { color: #6ee7b7; }
+.logo-mark { flex: none; display: block; border-radius: 11px; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.35); }
+.rpt-cover-top .firm .logo-mark { box-shadow: none; }
