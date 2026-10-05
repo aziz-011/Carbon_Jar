@@ -20,6 +20,8 @@ import { EsgData } from './pages/EsgData';
 import { EsgReport } from './pages/EsgReport';
 import { Clients } from './pages/Clients';
 import { PortalHome } from './pages/portal/PortalHome';
+import { Lca } from './pages/Lca';
+import { PortalLca } from './pages/portal/PortalLca';
 import { PortalCompliance } from './pages/portal/PortalCompliance';
 import { PortalDocuments } from './pages/portal/PortalDocuments';
 import { PortalResults } from './pages/portal/PortalResults';
@@ -50,6 +52,7 @@ export function App() {
             <Route path="/documents" element={<Documents />} />
             <Route path="/flotte" element={<Fleet />} />
             <Route path="/suivi" element={<Tracking />} />
+            <Route path="/acv" element={<Lca />} />
             <Route path="/esg" element={<EsgData />} />
             <Route path="/rapport-esg" element={<EsgReport />} />
             <Route path="/clients" element={<Clients />} />
@@ -60,6 +63,7 @@ export function App() {
             <Route path="/portail/flotte" element={<PortalFleet />} />
             <Route path="/portail/questionnaire" element={<PortalQuestionnaire />} />
             <Route path="/portail/conformite" element={<PortalCompliance />} />
+            <Route path="/portail/acv" element={<PortalLca />} />
             <Route path="/portail/rapport" element={<PortalReport />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

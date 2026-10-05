@@ -1,4 +1,7 @@
-import type { Activity, Budget, DocumentRecord, Entity, EsgYear, Organization, Target, Vehicle } from '../domain/types';
+import type { Activity, Budget, DocumentRecord, Entity, EsgYear, LcaStudy, Organization, Target, Vehicle } from '../domain/types';
+import { DEFAULT_FACTORS } from '../data/emissionFactors';
+import { computeInventory } from '../lib/calc';
+import { emptyLca, flowsFromInventory } from '../lib/lca';
 import { buildDemoDocuments } from './demoDocuments';
 
 /**
@@ -160,3 +163,41 @@ export const DEMO_ESG: Record<number, EsgYear> = {
       '1. Installer 1,2 MWc de panneaux photovoltaïques en toiture de l’usine de Sfax d’ici 2027 (≈ 1 800 MWh/an autoproduits).\n2. Récupérer la chaleur des purges des chaudières vapeur (−8 % de gaz naturel).\n3. Remplacer le R-404A par un fluide à faible PRG (R-448A puis CO2 transcritique).\n4. Former les chauffeurs à l’écoconduite et renouveler deux camions par des modèles Euro VI.\n5. Engager une certification ISO 50001 du système de management de l’énergie en 2026.',
   },
 };
+
+/** ACV de la résine produite à Sfax : inventaire issu du bilan 2025, complété des étapes aval. */
+function demoLca(): LcaStudy {
+  const inv = computeInventory(DEMO_ACTIVITIES, DEFAULT_FACTORS, DEMO_ENTITIES, DEMO_ORG, 2025);
+  const units = DEMO_ORG.intensityMetric[2025];
+  const base = emptyLca(DEMO_ORG);
+  const flows: LcaStudy['flows'] = [
+    ...flowsFromInventory(inv.results, units),
+    { id: 'lca-sea', stage: 'transport', description: 'Export vers l’Europe (porte-conteneurs Radès – Gênes)', factorId: 'freight_sea', quantity: 620, quality: 'calculee', source: 'Part export 40 % × 1 550 km' },
+    { id: 'lca-road', stage: 'transport', description: 'Livraison clients par transporteur', factorId: 'freight_road_down', quantity: 180, quality: 'estimee', source: 'Distance moyenne 180 km' },
+    { id: 'lca-use', stage: 'utilisation', description: 'Séchage du revêtement chez l’utilisateur', factorId: 'use_electricity', quantity: 45, quality: 'estimee', source: 'Fiche technique : 45 kWh par tonne appliquée' },
+    { id: 'lca-eol-land', stage: 'fin_de_vie', description: 'Mise en décharge des supports revêtus', factorId: 'eol_landfill', quantity: 0.3, quality: 'calculee', source: 'Statistiques ANGed : 30 % de la masse appliquée finit en décharge' },
+    { id: 'lca-eol-rec', stage: 'fin_de_vie', description: 'Recyclage des emballages et supports', factorId: 'eol_recycling', quantity: 0.4, quality: 'calculee', source: 'Statistiques ANGed : 40 % recyclés' },
+    { id: 'lca-avoided', stage: 'fin_de_vie', description: 'Matière vierge évitée grâce au recyclage', factorId: 'plastic', quantity: 120, quality: 'estimee', avoided: true, source: 'Taux de substitution 30 %' },
+  ];
+  return {
+    ...base,
+    product: 'Résine de revêtement (production de l’usine de Sfax)',
+    functionalUnit: '1 tonne de résine livrée et appliquée chez le client',
+    annualUnits: units,
+    goal: 'Quantifier l’empreinte carbone de la résine sur son cycle de vie, identifier les étapes à améliorer et répondre aux demandes de données carbone des clients européens (MACF / CBAM).',
+    audience: 'Direction industrielle, service commercial export et clients européens (communication non comparative).',
+    flows,
+    conclusions:
+      'L’empreinte de la résine est dominée par l’amont (matières premières pétrochimiques) et par l’énergie de fabrication (gaz des chaudières et électricité). Le transport et la fin de vie pèsent peu. Les résultats de fabrication reposent sur des données mesurées (factures, compteurs) ; l’amont et la fin de vie reposent sur des facteurs génériques et doivent être consolidés avec les fournisseurs.',
+    recommendations: [
+      'Obtenir des fournisseurs de matières pétrochimiques des déclarations environnementales (EPD) pour remplacer les facteurs génériques.',
+      'Intégrer 20 % de matière recyclée ou biosourcée dans la formulation d’ici 2028.',
+      'Récupérer la chaleur des purges des chaudières et installer le photovoltaïque en toiture pour réduire l’énergie de fabrication.',
+      'Proposer aux clients une reprise des emballages pour augmenter le taux de recyclage en fin de vie.',
+    ],
+    validated: ['objectifs', 'inventaire', 'impacts', 'interpretation'],
+    published: true,
+    publishedAt: '2026-03-12T10:00:00.000Z',
+  };
+}
+
+export const DEMO_LCA: LcaStudy = demoLca();
