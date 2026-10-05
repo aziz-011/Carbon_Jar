@@ -70,7 +70,6 @@ Les données sont enregistrées dans le navigateur (localStorage). Il n’y a pa
 - **Flotte** : registre alimenté par les cartes grises et fiches techniques ; carburant réel ou estimation kilométrage × consommation.
 - **Suivi** : consommé, restant et projection de fin d’année par budget (kWh, litres, t CO2e, TND) et répartition mensuelle selon les périodes des factures.
 - **Rapport ESG** : couverture, synthèse exécutive, périmètre, méthodologie, environnement (scopes, catégories, gaz, énergie, évolution, intensité, eau, déchets, objectifs, plan d’action), social, gouvernance, engagements, annexes (correspondance GRI / ESRS, facteurs utilisés, pièces justificatives). Export HTML et impression PDF.
-- **Analyse de cycle de vie (ACV)** : conduite selon les 4 phases ISO 14040/14044 (objectifs et périmètre, inventaire des flux, évaluation des impacts, interprétation) sur les 5 étapes du cycle de vie (matières premières, fabrication, transport, utilisation, fin de vie). L’inventaire se pré-remplit depuis le bilan carbone (données d’activité ÷ production annuelle). Résultats : kg CO2e, énergie, eau et déchets par unité fonctionnelle, points chauds, sensibilité ±20 %, contrôles ISO 14044, bénéfices évités déclarés à part (module D). Une fois publiés, les résultats apparaissent dans l’onglet « Cycle de vie (ACV) » du portail client.
 - **Vérification des calculs** : chaque donnée affiche son calcul, par exemple `1 460 kWh × 0,58 kg CO2e/kWh = 846,8 kg CO2e`.
 
 ## Fonctionnalités

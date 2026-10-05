@@ -50,7 +50,6 @@ export function Layout({ children }: { children: ReactNode }) {
         { to: '/suivi', label: 'Suivi & budgets', icon: 'gauge' },
         { to: '/conseils', label: 'Plan de réduction', icon: 'trendDown' },
         { to: '/objectifs', label: 'Objectifs', icon: 'target' },
-        { to: '/acv', label: 'Analyse de cycle de vie', icon: 'recycle', badge: state.lca?.published ? 'publiée' : undefined, soft: true },
       ],
     },
     {
@@ -83,7 +82,6 @@ export function Layout({ children }: { children: ReactNode }) {
         { to: '/portail/economies', label: 'Économies & conseils', icon: 'trendDown', locked: !tabs.results },
         { to: '/portail/flotte', label: 'Ma flotte', icon: 'car', hidden: !tabs.fleet, badge: state.vehicles.length, soft: true },
         { to: '/portail/conformite', label: 'Conformité', icon: 'shield', locked: !tabs.results },
-        { to: '/portail/acv', label: 'Cycle de vie (ACV)', icon: 'recycle', locked: !state.lca?.published },
         { to: '/portail/questionnaire', label: 'Questionnaire ESG', icon: 'users' },
         { to: '/portail/rapport', label: 'Mon rapport ESG', icon: 'report', locked: !tabs.report },
       ],

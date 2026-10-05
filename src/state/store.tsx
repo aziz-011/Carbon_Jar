@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react';
-import type { Activity, Budget, DocumentRecord, EmissionFactor, Entity, EsgYear, LcaStudy, Organization, PortalSettings, Target, Vehicle } from '../domain/types';
+import type { Activity, Budget, DocumentRecord, EmissionFactor, Entity, EsgYear, Organization, PortalSettings, Target, Vehicle } from '../domain/types';
 import { DEFAULT_FACTORS } from '../data/emissionFactors';
 import { computeInventory, type Inventory } from '../lib/calc';
 import { plateKey } from '../lib/documents/commit';
 import { uid } from '../lib/format';
-import { DEMO_ACTIVITIES, DEMO_BUDGETS, DEMO_DOCUMENTS, DEMO_ENTITIES, DEMO_ESG, DEMO_LCA, DEMO_ORG, DEMO_TARGETS, DEMO_VEHICLES } from './demo';
+import { DEMO_ACTIVITIES, DEMO_BUDGETS, DEMO_DOCUMENTS, DEMO_ENTITIES, DEMO_ESG, DEMO_ORG, DEMO_TARGETS, DEMO_VEHICLES } from './demo';
 
 /** Données d'un client (une organisation dont on établit le bilan). */
 export interface AppState {
@@ -20,8 +20,6 @@ export interface AppState {
   /** Indicateurs sociaux et de gouvernance par année. */
   esg: Record<number, EsgYear>;
   portal: PortalSettings;
-  /** Analyse de cycle de vie du produit principal. */
-  lca?: LcaStudy;
 }
 
 export interface ClientRecord {
@@ -40,7 +38,7 @@ export interface Workspace {
 }
 
 /** Incrémenté quand le dossier de démonstration est enrichi : il est alors rechargé une fois. */
-export const DEMO_VERSION = 3;
+export const DEMO_VERSION = 4;
 
 export type Action =
   | { type: 'org'; patch: Partial<Organization> }
@@ -63,7 +61,6 @@ export type Action =
   | { type: 'budget:delete'; id: string }
   | { type: 'esg'; year: number; patch: Partial<EsgYear> }
   | { type: 'portal'; patch: Partial<PortalSettings> }
-  | { type: 'lca'; study: LcaStudy }
   | { type: 'reset'; state: AppState };
 
 export type WorkspaceAction =
@@ -89,7 +86,6 @@ export const DEMO_STATE: AppState = {
   vehicles: DEMO_VEHICLES,
   budgets: DEMO_BUDGETS,
   esg: DEMO_ESG,
-  lca: DEMO_LCA,
   portal: {
     notApplicable: [],
     reportPublished: true,
@@ -231,8 +227,6 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, esg: { ...state.esg, [action.year]: { ...(state.esg[action.year] ?? {}), ...action.patch } } };
     case 'portal':
       return { ...state, portal: { ...state.portal, ...action.patch } };
-    case 'lca':
-      return { ...state, lca: action.study };
     case 'reset':
       return normalizeState(action.state);
   }
