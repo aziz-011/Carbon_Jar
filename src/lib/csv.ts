@@ -135,10 +135,10 @@ export function downloadFile(filename: string, content: string, mime = 'text/csv
 }
 
 export const CSV_TEMPLATE = `libellé;quantité;unité;coût;année;site;justificatif
-Gaz naturel chaudière;450000;kWh;45000;2025;Usine;Facture GRDF 2025
-Gazole flotte camions;32000;L;54400;2025;Usine;Cartes carburant
-Électricité;1200000;kWh;240000;2025;Usine;Factures fournisseur
+Gaz naturel chaudière;450000;kWh;40500;2025;Usine;Facture STEG gaz 2025
+Gazole flotte camions;32000;L;70560;2025;Usine;Cartes carburant
+Électricité STEG;1200000;kWh;360000;2025;Usine;Factures STEG
 Recharge climatisation R-410A;12;kg;;2025;Usine;Registre maintenance
 Billets avion;85000;p.km;;2025;Siège;Agence de voyage
-Achat acier;150000;kg;180000;2025;Usine;ERP achats
+Achat acier;150000;kg;600000;2025;Usine;ERP achats
 `;

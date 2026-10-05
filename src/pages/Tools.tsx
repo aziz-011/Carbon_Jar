@@ -116,7 +116,7 @@ function Refrigerant() {
 
 function Scope2Dual() {
   const [kwh, setKwh] = useState<number | undefined>(1000000);
-  const [zone, setZone] = useState('FR');
+  const [zone, setZone] = useState('TN');
   const [share, setShare] = useState<number | undefined>(60);
   const [instFactor, setInstFactor] = useState<number | undefined>(0);
   const [residual, setResidual] = useState<number | undefined>();

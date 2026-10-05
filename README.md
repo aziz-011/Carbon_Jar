@@ -87,4 +87,12 @@ src/
   components/             Composants d’interface
 ```
 
+## Paramétrage Tunisie
+
+- Devise par défaut : **TND** ; prix carbone interne par défaut : 270 TND/t CO2e.
+- Électricité du réseau tunisien (STEG) : **0,58 kg CO2e/kWh** (valeur fournie par l’organisation).
+- Prix unitaires indicatifs en TND (gazole 2,205 TND/L, essence 2,525 TND/L, électricité 0,30 TND/kWh…), à remplacer par vos factures.
+- Ratios monétaires du Scope 3 convertis en kg CO2e/TND (1 € ≈ 3,4 TND).
+- Conseils adaptés au contexte local : gisement solaire, autoproduction (loi n° 2015-12), accompagnement de l’ANME.
+
 > ⚠️ Les facteurs d’émission fournis sont des valeurs par défaut documentées, en particulier les facteurs électriques par pays et les ratios monétaires. Avant toute publication officielle, remplacez-les par les facteurs officiels de votre pays ou de vos fournisseurs dans la page **Facteurs d’émission**.

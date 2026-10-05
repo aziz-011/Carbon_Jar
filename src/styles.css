@@ -250,3 +250,7 @@ ul.clean li { margin-bottom: 4px; }
 .export-panel { width: min(720px, 100%); max-height: 90vh; overflow: auto; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+.solutions { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.solution { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.solution .rank { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--surface); font-size: 0.75rem; font-weight: 700; }

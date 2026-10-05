@@ -28,6 +28,8 @@ export interface Recommendation {
   costSaved: [number, number];
   /** Remarque méthodologique (ex. effet uniquement market-based). */
   note?: string;
+  /** Levier purement contractuel : réduit le Scope 2 market-based sans changer les émissions physiques. */
+  marketOnly?: boolean;
 }
 
 interface Rule {
@@ -51,7 +53,20 @@ interface Rule {
 interface Context {
   /** Facteur du réseau électrique (kg CO2e/kWh) de la zone principale de l'organisation. */
   gridFactor: number;
+  /** Pays principal (code de zone réseau, ex. « TN ») pour adapter les conseils au contexte local. */
+  country?: string;
 }
+
+/** Précisions propres au contexte tunisien, ajoutées aux leviers concernés. */
+const TUNISIA_NOTES: Record<string, string> = {
+  'solar-pv':
+    'En Tunisie, l’ensoleillement élevé (de l’ordre de 1 600 à 1 800 kWh produits par kWc et par an) rend l’autoconsommation particulièrement rentable. Le cadre de l’autoproduction (loi n° 2015-12) et l’ANME accompagnent ces projets.',
+  'electricity-efficiency':
+    'En Tunisie, l’ANME accompagne les audits énergétiques (obligatoires au-delà de certains seuils de consommation) et les contrats-programmes d’efficacité énergétique.',
+  'heat-efficiency': 'L’ANME peut cofinancer l’audit énergétique et les investissements d’efficacité thermique.',
+  'renewable-contracts':
+    'En Tunisie, le marché des garanties d’origine est peu développé : privilégiez l’autoproduction sur site ou un contrat d’achat direct avec un producteur renouvelable, avec des attributs traçables.',
+};
 
 const FOSSIL_HEAT = new Set(['ng_kwh', 'ng_m3', 'fuel_oil', 'lpg_stationary', 'coal']);
 const FLEET = new Set(['diesel_vehicle', 'petrol_vehicle']);
@@ -347,7 +362,12 @@ export function recommend(inventory: Inventory, ctx: Context): Recommendation[] 
     if (baselineKg <= 0) continue;
     const energyKwh = rs.reduce((s, r) => s + r.energyKwh, 0);
     const cost = rs.reduce((s, r) => s + r.cost, 0);
-    const cut = typeof rule.emissionCut === 'function' ? rule.emissionCut(rs, ctx) : rule.emissionCut;
+    let cut = typeof rule.emissionCut === 'function' ? rule.emissionCut(rs, ctx) : rule.emissionCut;
+    // Gisement solaire tunisien plus élevé : part d'électricité autoproductible plus importante.
+    if (rule.id === 'solar-pv' && ctx.country === 'TN') cut = [0.15, 0.4];
+    // Marché des garanties d'origine peu développé en Tunisie : potentiel contractuel plus limité.
+    if (rule.id === 'renewable-contracts' && ctx.country === 'TN') cut = [0.1, 0.5];
+    const localNote = ctx.country === 'TN' ? TUNISIA_NOTES[rule.id] : undefined;
     const baselineT = baselineKg / 1000;
     recos.push({
       id: rule.id,
@@ -361,10 +381,12 @@ export function recommend(inventory: Inventory, ctx: Context): Recommendation[] 
       reductionT: [baselineT * cut[0], baselineT * cut[1]],
       energySavedMWh: rule.energyCut ? [(energyKwh / 1000) * rule.energyCut[0], (energyKwh / 1000) * rule.energyCut[1]] : [0, 0],
       costSaved: rule.costCut ? [cost * rule.costCut[0], cost * rule.costCut[1]] : [0, 0],
-      note: rule.note,
+      note: [rule.note, localNote].filter(Boolean).join(' ') || undefined,
+      marketOnly: rule.marketOnly,
     });
   }
-  const mid = (r: Recommendation) => (r.reductionT[0] + r.reductionT[1]) / 2;
+  // Les réductions physiques passent devant les leviers purement contractuels (market-based).
+  const mid = (r: Recommendation) => ((r.reductionT[0] + r.reductionT[1]) / 2) * (r.marketOnly ? 0.3 : 1);
   return recos.sort((a, b) => mid(b) - mid(a));
 }
 

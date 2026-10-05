@@ -22,7 +22,7 @@ const UNIT_ALIASES: Record<string, string[]> = {
   km: ['km', 'kilometre', 'kilometres'],
   'p.km': ['p.km', 'pkm', 'km', 'passager.km'],
   't.km': ['t.km', 'tkm', 'tonne.km'],
-  '€': ['€', 'eur', 'euro', 'euros', 'mad', 'dh', 'tnd', 'dzd', 'usd', '$', 'cfa'],
+  TND: ['tnd', 'dt', 'dinar', 'dinars', '€', 'eur', 'euro', 'euros', 'mad', 'dh', 'dzd', 'usd', '$', 'cfa'],
   nuit: ['nuit', 'nuits', 'nuitee', 'nuitees'],
   repas: ['repas', 'couvert', 'couverts'],
   'unité': ['unite', 'unites', 'u', 'pcs', 'piece', 'pieces'],

@@ -38,6 +38,14 @@ export function DataEntry() {
   );
 }
 
+/** Remplace un facteur d'électricité réseau par celui du pays du site (ex. réseau tunisien pour un site en Tunisie). */
+function localize(factorId: string, country: string | undefined, factorById: Map<string, { gridZone?: string }>): string {
+  const f = factorById.get(factorId);
+  if (!f?.gridZone || !country) return factorId;
+  const local = `elec_${country}`;
+  return factorById.has(local) ? local : factorId;
+}
+
 function emptyActivity(entityId: string, year: number): Activity {
   return { id: uid(), entityId, year, factorId: '', quantity: 0, quality: 2 };
 }
@@ -61,7 +69,7 @@ function ManualEntry() {
   const suggest = () => {
     const r = classify(draft.description ?? '', factors);
     if (r.best) {
-      set({ factorId: r.best.factor.id });
+      set({ factorId: localize(r.best.factor.id, entity?.country, factorById) });
       setHint(r.explanation);
     } else setHint(r.explanation);
   };
@@ -301,7 +309,8 @@ function ImportData({ onDone }: { onDone: () => void }) {
     setProposals(
       rows.map((r) => {
         const c = classify(r.description, factors, r.unit);
-        return { ...r, factorId: c.best?.factor.id ?? '', confidence: c.confidence, explanation: c.explanation, include: !!c.best && r.quantity !== undefined };
+        const site = (r.site ? entities.find((e) => e.name.toLowerCase().includes(r.site!.toLowerCase())) : undefined) ?? entities.find((e) => e.id === entityId);
+        return { ...r, factorId: c.best ? localize(c.best.factor.id, site?.country, factorById) : '', confidence: c.confidence, explanation: c.explanation, include: !!c.best && r.quantity !== undefined };
       }),
     );
   };

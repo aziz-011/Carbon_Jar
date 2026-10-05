@@ -284,7 +284,7 @@ export const KNOWLEDGE: Section[] = [
         'Industrie chimique : les émissions de production des matières pétrochimiques achetées sont du Scope 3.',
       ] },
       { kind: 'formula', label: 'Approche physique', formula: 'Émissions = Quantité achetée (kg, t) × Facteur d’émission du matériau' },
-      { kind: 'formula', label: 'Approche monétaire (spend-based)', formula: 'Émissions = Montant dépensé × Ratio monétaire (kg CO2e / €)', note: 'Moins précise ; à remplacer progressivement par des données fournisseurs.' },
+      { kind: 'formula', label: 'Approche monétaire (spend-based)', formula: 'Émissions = Montant dépensé × Ratio monétaire (kg CO2e / TND ou €)', note: 'Moins précise ; à remplacer progressivement par des données fournisseurs.' },
     ],
   },
   {

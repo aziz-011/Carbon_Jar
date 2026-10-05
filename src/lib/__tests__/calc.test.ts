@@ -33,6 +33,10 @@ describe('facteurs d’émission', () => {
   it('gaz naturel ≈ 0,182 kg CO2e/kWh PCS', () => {
     expect(factorKgCO2ePerUnit(F.get('ng_kwh')!, 'AR5')).toBeCloseTo(0.182, 2);
   });
+
+  it('électricité Tunisie = 0,58 kg CO2e/kWh', () => {
+    expect(factorKgCO2ePerUnit(F.get('elec_TN')!, 'AR5')).toBe(0.58);
+  });
 });
 
 describe('PRG', () => {
@@ -51,7 +55,7 @@ describe('computeActivity', () => {
     expect(r.byGas.CO2).toBeCloseTo(2675, 0);
     expect(r.byGas.CH4! + r.byGas.N2O!).toBeGreaterThan(0);
     expect(r.energyKwh).toBeCloseTo(10030, 0);
-    expect(r.cost).toBeCloseTo(1700, 0);
+    expect(r.cost).toBeCloseTo(2205, 0); // 2,205 TND/L (prix indicatif Tunisie)
     expect(r.costEstimated).toBe(true);
   });
 
@@ -155,5 +159,15 @@ describe('formules de pilotage', () => {
     expect(t.points).toHaveLength(11);
     expect(t.points[5].value).toBe(750);
     expect(targetProgress(1000, 800, 50).progress).toBeCloseTo(0.4);
+  });
+});
+
+describe('recommandations', () => {
+  it('les réductions physiques passent devant les contrats market-based', async () => {
+    const { recommend } = await import('../recommendations');
+    const inv = computeInventory([act('elec_TN', 1_000_000), { ...act('ng_kwh', 500_000), id: 'g' }], DEFAULT_FACTORS, [{ ...site, country: 'TN' }], org, 2025);
+    const recos = recommend(inv, { gridFactor: 0.58, country: 'TN' });
+    expect(recos[0].id).not.toBe('renewable-contracts');
+    expect(recos.find((r) => r.id === 'solar-pv')?.note).toMatch(/Tunisie/);
   });
 });

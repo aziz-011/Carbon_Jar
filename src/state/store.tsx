@@ -26,7 +26,8 @@ type Action =
   | { type: 'factor:delete'; id: string }
   | { type: 'reset'; state: AppState };
 
-const STORAGE_KEY = 'carbon-jar:v1';
+// v2 : passage à la Tunisie (TND, réseau STEG) — les anciennes données de démonstration ne sont pas reprises.
+const STORAGE_KEY = 'carbon-jar:v2';
 
 export const DEMO_STATE: AppState = {
   org: DEMO_ORG,
@@ -38,7 +39,7 @@ export const DEMO_STATE: AppState = {
 
 export const EMPTY_STATE: AppState = {
   org: { ...DEMO_ORG, name: 'Mon organisation', intensityMetric: {}, exclusions: '', reportingYear: new Date().getFullYear() - 1, baseYear: new Date().getFullYear() - 1 },
-  entities: [{ id: 'principal', name: 'Site principal', equityShare: 100, financialControl: true, operationalControl: true, country: 'FR' }],
+  entities: [{ id: 'principal', name: 'Site principal', equityShare: 100, financialControl: true, operationalControl: true, country: 'TN' }],
   activities: [],
   targets: [],
   customFactors: [],

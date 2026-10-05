@@ -7,6 +7,7 @@ const cases: Array<[string, string | undefined, number, string]> = [
   ['Facture gaz naturel chaudière', 'kWh', 1, 'S1_STATIONARY'],
   ['Gazole flotte camions', 'L', 1, 'S1_MOBILE'],
   ['Électricité EDF', 'kWh', 2, 'S2_ELECTRICITY'],
+  ['Facture électricité STEG', 'kWh', 2, 'S2_ELECTRICITY'],
   ['Recharge climatisation R-410A', 'kg', 1, 'S1_FUGITIVE'],
   ['Billets avion Paris-Casablanca', 'p.km', 3, 'S3_C6'],
   ['Achat acier', 'kg', 3, 'S3_C1'],
@@ -22,6 +23,10 @@ describe('classification automatique', () => {
     const r = classify(text, DEFAULT_FACTORS, unit);
     expect(r.scope).toBe(scope);
     expect(r.category).toBe(category);
+  });
+
+  it('électricité sans pays précisé → réseau tunisien', () => {
+    expect(classify('Facture électricité STEG', DEFAULT_FACTORS, 'kWh').best?.factor.id).toBe('elec_TN');
   });
 
   it('véhicule électrique de la flotte → Scope 2', () => {

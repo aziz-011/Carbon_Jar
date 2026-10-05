@@ -11,9 +11,9 @@ const EFFORT_BADGE = { faible: 'ok', moyen: 'warn', élevé: 'danger' } as const
 export function Advice() {
   const { state, inventory: inv, inventoryFor } = useStore();
   const { org } = state;
-  const mainZone = state.entities[0]?.country ?? 'FR';
-  const gridFactor = GRID_ZONES.find((z) => z.code === mainZone)?.value ?? 0.46;
-  const recos = useMemo(() => recommend(inv, { gridFactor }), [inv, gridFactor]);
+  const mainZone = state.entities[0]?.country ?? 'TN';
+  const gridFactor = GRID_ZONES.find((z) => z.code === mainZone)?.value ?? 0.58;
+  const recos = useMemo(() => recommend(inv, { gridFactor, country: mainZone }), [inv, gridFactor]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const advice = qualityAdvice(inv, { exclusions: org.exclusions, hasBaseYearData: inventoryFor(org.baseYear).results.length > 0, offsetsT: org.offsetsTco2e });
 

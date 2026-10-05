@@ -15,7 +15,7 @@ export const APPROACHES: Array<[ConsolidationApproach, string, string]> = [
 export function Boundary() {
   const { state, dispatch, factors } = useStore();
   const { org, entities } = state;
-  const [draft, setDraft] = useState<Entity>({ id: '', name: '', equityShare: 100, financialControl: true, operationalControl: true, country: 'FR' });
+  const [draft, setDraft] = useState<Entity>({ id: '', name: '', equityShare: 100, financialControl: true, operationalControl: true, country: 'TN' });
 
   const compare = APPROACHES.map(([id, label]) => {
     const inv = computeInventory(state.activities, factors, entities, { gwpSet: org.gwpSet, consolidation: id }, org.reportingYear);
@@ -25,7 +25,7 @@ export function Boundary() {
   const save = () => {
     if (!draft.name.trim()) return;
     dispatch({ type: 'entity:upsert', entity: { ...draft, id: draft.id || uid() } });
-    setDraft({ id: '', name: '', equityShare: 100, financialControl: true, operationalControl: true, country: 'FR' });
+    setDraft({ id: '', name: '', equityShare: 100, financialControl: true, operationalControl: true, country: 'TN' });
   };
 
   return (
@@ -116,7 +116,7 @@ export function Boundary() {
           <button className="primary" onClick={save} disabled={!draft.name.trim()}>
             {draft.id ? 'Enregistrer' : 'Ajouter'}
           </button>
-          {draft.id && <button onClick={() => setDraft({ id: '', name: '', equityShare: 100, financialControl: true, operationalControl: true, country: 'FR' })}>Annuler</button>}
+          {draft.id && <button onClick={() => setDraft({ id: '', name: '', equityShare: 100, financialControl: true, operationalControl: true, country: 'TN' })}>Annuler</button>}
         </div>
       </Card>
 
