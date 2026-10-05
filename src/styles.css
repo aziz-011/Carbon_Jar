@@ -4,27 +4,27 @@
  * les scopes suivent une palette terre (terre cuite, ocre, ardoise) distincte du vert « validé ».
  */
 :root {
-  --bg: #f3eee2;
-  --surface: #fffcf5;
-  --surface-2: #efe8d8;
-  --surface-3: #e6dcc6;
-  --border: #ddd3bd;
-  --text: #15291f;
-  --muted: #5d6a5f;
-  --accent: #0f7a57;
-  --accent-strong: #0b4a36;
-  --accent-soft: #dcefe4;
-  --forest: #0e3b2c;
-  --forest-2: #164a38;
-  --on-forest: #efe7d2;
-  --on-forest-muted: #a9bba8;
-  --gold: #b8862b;
+  --bg: #faf7f0;
+  --surface: #fffefb;
+  --surface-2: #f5f1e7;
+  --surface-3: #ede6d6;
+  --border: #e8e0cf;
+  --text: #0f2a20;
+  --muted: #5b6b62;
+  --accent: #059669;
+  --accent-strong: #047857;
+  --accent-soft: #d8f3e6;
+  --forest: #064e3b;
+  --forest-2: #0a634b;
+  --on-forest: #f6f1e4;
+  --on-forest-muted: #a7d3bf;
+  --gold: #c9973a;
   --danger: #a63d2f;
-  --danger-soft: #f6e1dc;
+  --danger-soft: #f8e4df;
   --warn: #8a6212;
-  --warn-soft: #f5e9c9;
+  --warn-soft: #f8eed3;
   --info: #2e6283;
-  --info-soft: #e1ebf0;
+  --info-soft: #e5eef3;
   --s1: #b45a37;
   --s2: #b8862b;
   --s3: #3f6e8c;
@@ -47,11 +47,11 @@
     --border: #2a4237;
     --text: #ece5d2;
     --muted: #a2ae9f;
-    --accent: #3dbe8f;
-    --accent-strong: #8fe0bf;
-    --accent-soft: #15382a;
-    --forest: #08120d;
-    --forest-2: #12291e;
+    --accent: #34d399;
+    --accent-strong: #6ee7b7;
+    --accent-soft: #0f3b2c;
+    --forest: #052e22;
+    --forest-2: #08402f;
     --on-forest: #e5ddc6;
     --on-forest-muted: #8ea394;
     --gold: #e2b14c;
@@ -78,11 +78,11 @@
   --border: #2a4237;
   --text: #ece5d2;
   --muted: #a2ae9f;
-  --accent: #3dbe8f;
-  --accent-strong: #8fe0bf;
-  --accent-soft: #15382a;
-  --forest: #08120d;
-  --forest-2: #12291e;
+  --accent: #34d399;
+  --accent-strong: #6ee7b7;
+  --accent-soft: #0f3b2c;
+  --forest: #052e22;
+  --forest-2: #08402f;
   --on-forest: #e5ddc6;
   --on-forest-muted: #8ea394;
   --gold: #e2b14c;
@@ -318,7 +318,7 @@ ul.clean li { margin-bottom: 4px; }
 .hero {
   background: var(--forest); color: var(--on-forest); border-radius: calc(var(--radius) + 4px);
   padding: 28px 30px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: center;
-  background-image: radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--accent) 35%, transparent), transparent 55%);
+  background-image: radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 55%);
 }
 .hero h1 { color: var(--on-forest); font-size: 2rem; }
 .hero p { color: var(--on-forest-muted); max-width: 62ch; margin: 6px 0 0; }
@@ -409,8 +409,8 @@ ul.clean li { margin-bottom: 4px; }
 /* ─── Rapport ESG : document imprimable (toujours sur papier ivoire) ─── */
 .rpt-scroll { overflow-x: auto; }
 .rpt {
-  --p-paper: #fffdf7; --p-ink: #17291f; --p-muted: #5f6b62; --p-rule: #ddd4bf; --p-band: #f1ead9;
-  --p-forest: #0e3b2c; --p-emerald: #0f7a57; --p-sand: #c9b48a; --p-beige: #efe7d2;
+  --p-paper: #fffefa; --p-ink: #0f2a20; --p-muted: #5b6b62; --p-rule: #e6dece; --p-band: #f6f1e6;
+  --p-forest: #064e3b; --p-emerald: #059669; --p-sand: #d9c9a3; --p-beige: #f6f1e4;
   --p-s1: #b45a37; --p-s2: #b8862b; --p-s3: #3f6e8c;
   background: var(--p-paper); color: var(--p-ink); width: 100%; max-width: 920px; margin: 0 auto;
   border-radius: 6px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 20px 50px -30px rgba(0, 0, 0, 0.35);
@@ -418,7 +418,7 @@ ul.clean li { margin-bottom: 4px; }
 }
 .rpt h1, .rpt h2, .rpt h3 { font-family: var(--font-display); color: var(--p-forest); text-wrap: balance; }
 .rpt-cover { background: var(--p-forest); color: var(--p-beige); padding: 56px 64px 44px; min-height: 640px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
-.rpt-cover::after { content: ''; position: absolute; right: -120px; top: -120px; width: 420px; height: 420px; border-radius: 50%; border: 60px solid rgba(61, 190, 143, 0.14); }
+.rpt-cover::after { content: ''; position: absolute; right: -120px; top: -120px; width: 420px; height: 420px; border-radius: 50%; border: 60px solid rgba(52, 211, 153, 0.16); }
 .rpt-cover-top { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--p-sand); position: relative; z-index: 1; }
 .rpt-cover-top .firm { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--p-beige); }
 .rpt-cover-top .firm span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--p-emerald); color: #fff; }
@@ -525,3 +525,44 @@ ol.steps { list-style: none; padding: 0; margin: 0; }
 .request-head h3 { min-width: 0; }
 .request-head .badge { flex: none; margin-top: 2px; }
 .file-line .badge { flex: none; }
+
+/* ─── Empreinte & économies ─── */
+.savings-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); }
+.savings-hero .scope-legend { color: var(--on-forest); }
+.savings-hero .scope-bar { height: 22px; background: rgba(255, 255, 255, 0.12); }
+.big-number { font: 800 3.4rem/1 var(--font-ui); letter-spacing: -0.02em; color: #fff; margin: 8px 0 6px; font-variant-numeric: tabular-nums; }
+.big-number span { font-size: 1.2rem; font-weight: 700; color: var(--on-forest-muted); }
+.savings-hero p strong { color: #fff; }
+.scope-card.s1 { box-shadow: inset 0 4px 0 var(--s1), var(--shadow); }
+.scope-card.s2 { box-shadow: inset 0 4px 0 var(--s2), var(--shadow); }
+.scope-card.s3 { box-shadow: inset 0 4px 0 var(--s3), var(--shadow); }
+.scope-figure { font: 800 1.9rem/1.1 var(--font-ui); font-variant-numeric: tabular-nums; margin: 4px 0; }
+.mini-sources { list-style: none; padding: 0; margin: 12px 0 0; border-top: 1px dashed var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.mini-sources li { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+.mini-sources li span { flex: 1; min-width: 0; }
+.mini-sources li .icon { color: var(--muted); }
+.money-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.money-tile { background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.money-tile span { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.money-tile b { font-size: 1.45rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.money-tile small { color: var(--muted); }
+.money-tile.warn { background: var(--warn-soft); }
+.gain-banner { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 1px; background: color-mix(in srgb, var(--accent) 30%, transparent); border-radius: var(--radius); overflow: hidden; }
+.gain-banner > div { background: var(--accent-soft); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.gain-banner span { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-strong); }
+.gain-banner b { font-size: 1.6rem; color: var(--accent-strong); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.gain-banner small { color: var(--muted); }
+.simulator { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); }
+.simulator input[type='range'] { width: 100%; accent-color: var(--accent); padding: 0; border: none; margin: 10px 0 14px; background: transparent; }
+.sim-value { color: var(--accent); font-size: 1.15rem; }
+.kv .kv-accent { background: var(--accent-soft); }
+.kv .kv-accent b { color: var(--accent-strong); }
+.tips { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.tip { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; background: var(--surface); min-width: 0; }
+.tip-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; }
+.tip h3 { margin: 0 0 5px; }
+.checklist { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.checklist li { display: flex; gap: 8px; font-size: 0.86rem; }
+.checklist li .icon { color: var(--accent); margin-top: 3px; }
+@media (max-width: 860px) { .savings-hero, .gain-banner, .money-grid { grid-template-columns: minmax(0, 1fr); } .big-number { font-size: 2.6rem; } }
+.gain-teaser { margin-top: 12px; background: var(--accent-soft); } .gain-teaser:hover { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }

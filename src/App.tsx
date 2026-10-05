@@ -25,6 +25,7 @@ import { PortalResults } from './pages/portal/PortalResults';
 import { PortalFleet } from './pages/portal/PortalFleet';
 import { PortalQuestionnaire } from './pages/portal/PortalQuestionnaire';
 import { PortalReport } from './pages/portal/PortalReport';
+import { PortalSavings } from './pages/portal/PortalSavings';
 
 export function App() {
   return (
@@ -54,6 +55,7 @@ export function App() {
             <Route path="/portail" element={<PortalHome />} />
             <Route path="/portail/documents" element={<PortalDocuments />} />
             <Route path="/portail/resultats" element={<PortalResults />} />
+            <Route path="/portail/economies" element={<PortalSavings />} />
             <Route path="/portail/flotte" element={<PortalFleet />} />
             <Route path="/portail/questionnaire" element={<PortalQuestionnaire />} />
             <Route path="/portail/rapport" element={<PortalReport />} />

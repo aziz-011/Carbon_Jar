@@ -7,6 +7,9 @@ import { fmt, fmtMoney } from '../../lib/format';
 import { collectionRate, requestProgress, workflowSteps } from '../../lib/progress';
 import { fmtMass } from '../../lib/tracking';
 import { useStore } from '../../state/store';
+import { GRID_ZONES } from '../../data/emissionFactors';
+import { recommend } from '../../lib/recommendations';
+import { moneyView } from '../../lib/savings';
 import { STATUS_PORTAL } from './PortalDocuments';
 
 /** Accueil du portail client : avancement du dossier, documents à fournir, résultats en direct. */
@@ -18,6 +21,8 @@ export function PortalHome() {
   const steps = workflowSteps(state, inv);
   const recent = state.documents.slice().sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt)).slice(0, 5);
   const missing = progress.filter((p) => p.state === 'missing');
+  const zone = state.entities[0]?.country ?? 'TN';
+  const money = moneyView(inv, recommend(inv, { gridFactor: GRID_ZONES.find((z) => z.code === zone)?.value ?? 0.58, country: zone }), org.carbonPrice);
 
   return (
     <div className="stack">
@@ -34,8 +39,8 @@ export function PortalHome() {
               <Icon name="upload" size={16} /> Déposer mes documents
             </Link>
             {inv.results.length > 0 && (
-              <Link className="btn" to="/portail/resultats">
-                <Icon name="chart" size={16} /> Voir mes résultats
+              <Link className="btn" to="/portail/economies">
+                <Icon name="trendDown" size={16} /> Mes économies possibles
               </Link>
             )}
           </div>
@@ -105,6 +110,14 @@ export function PortalHome() {
           <p className="small muted" style={{ marginTop: 10 }}>
             Énergie : {fmt(inv.energyMWh)} MWh · Dépenses associées : {fmtMoney(inv.cost, org.currency)}. Ces chiffres se mettent à jour à chaque document intégré.
           </p>
+          <Link to="/portail/economies" className="todo-item gain-teaser">
+            <span className="req-icon esg"><Icon name="trendDown" size={18} /></span>
+            <span className="grow">
+              <strong>Jusqu’à {fmtMoney(money.gains.total[1], org.currency)} de gains par an</strong>
+              <div className="small muted">en réduisant vos émissions de {fmt(money.gains.reductionT[0])} à {fmt(money.gains.reductionT[1])} t CO2e — voir les conseils pour votre activité</div>
+            </span>
+            <Icon name="arrowRight" size={16} />
+          </Link>
         </Card>
       )}
 

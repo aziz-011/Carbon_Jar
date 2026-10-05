@@ -44,6 +44,7 @@ Les données sont enregistrées dans le navigateur (localStorage). Il n’y a pa
   - Scope 3 : déplacements, eau, déchets, achats.
 - **Dépôt** : chaque pièce est lue et classée automatiquement à son arrivée. Le client peut déclarer une rubrique « non concernée ».
 - **Onglets progressifs** : ils s’ouvrent au fur et à mesure du dossier. « Mes résultats » s’active dès qu’une donnée est intégrée, « Ma flotte » dès qu’une carte grise est reconnue, « Mon rapport ESG » dès sa publication par le cabinet.
+- **Empreinte & économies** : total de CO2 émis puis détail par scope et par poste ; dépenses liées aux émissions et coût carbone (prix interne en TND) ; gains annuels possibles (économies d’énergie + coût carbone évité) ; simulateur « si je réduis de X % » ; conseils adaptés au secteur de l’entreprise (industrie, chimie, agroalimentaire, santé, enseignement, services, commerce, transport).
 - **Suivi** : avancement en 5 étapes (collecte → extraction → vérification → bilan carbone → rapport) et questionnaire social et gouvernance.
 
 **Espace cabinet** (ingénieurs) :
