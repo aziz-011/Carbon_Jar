@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { Icon, type IconName } from './Icon';
 import type { Scope } from '../domain/types';
 
 export const SCOPE_COLORS: Record<Scope | 'memo', string> = {
@@ -12,7 +13,7 @@ export const SCOPE_COLORS: Record<Scope | 'memo', string> = {
 export function scopeColor(scope: Scope): string {
   if (typeof window === 'undefined') return '#888';
   const v = getComputedStyle(document.documentElement).getPropertyValue(`--s${scope}`).trim();
-  return v || ['#d9572b', '#e0a100', '#2f7fa8'][scope - 1];
+  return v || ['#b45a37', '#b8862b', '#3f6e8c'][scope - 1];
 }
 
 export function cssVar(name: string, fallback: string): string {
@@ -20,10 +21,16 @@ export function cssVar(name: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
 
-export function PageHead({ title, intro, actions }: { title: string; intro?: ReactNode; actions?: ReactNode }) {
+export function PageHead({ title, intro, actions, eyebrow, icon }: { title: string; intro?: ReactNode; actions?: ReactNode; eyebrow?: string; icon?: IconName }) {
   return (
     <div className="page-head">
       <div>
+        {eyebrow && (
+          <div className="eyebrow">
+            {icon && <Icon name={icon} size={15} />}
+            {eyebrow}
+          </div>
+        )}
         <h1>{title}</h1>
         {intro && <p>{intro}</p>}
       </div>
@@ -32,12 +39,23 @@ export function PageHead({ title, intro, actions }: { title: string; intro?: Rea
   );
 }
 
-export function Card({ title, actions, children, className }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({ title, actions, children, className, icon }: { title?: ReactNode; actions?: ReactNode; children: ReactNode; className?: string; icon?: IconName }) {
   return (
     <section className={`card ${className ?? ''}`}>
       {(title || actions) && (
         <div className="card-title">
-          {typeof title === 'string' ? <h2>{title}</h2> : title}
+          {typeof title === 'string' ? (
+            <h2>
+              {icon && (
+                <span className="title-icon">
+                  <Icon name={icon} size={16} />
+                </span>
+              )}
+              {title}
+            </h2>
+          ) : (
+            title
+          )}
           {actions && <div className="row">{actions}</div>}
         </div>
       )}
@@ -46,9 +64,14 @@ export function Card({ title, actions, children, className }: { title?: ReactNod
   );
 }
 
-export function Stat({ label, value, sub, accent }: { label: string; value: ReactNode; sub?: ReactNode; accent?: 's1' | 's2' | 's3' | 'main' }) {
+export function Stat({ label, value, sub, accent, icon }: { label: string; value: ReactNode; sub?: ReactNode; accent?: 's1' | 's2' | 's3' | 'main'; icon?: IconName }) {
   return (
     <div className={`card stat ${accent ? `accent-${accent}` : ''}`}>
+      {icon && (
+        <span className="stat-icon">
+          <Icon name={icon} size={17} />
+        </span>
+      )}
       <span className="label">{label}</span>
       <span className="value">{value}</span>
       {sub && <span className="sub">{sub}</span>}
@@ -62,11 +85,16 @@ export function ScopeBadge({ scope }: { scope: Scope | 'memo' | 'hors-inventaire
   return <span className={`badge s${scope}`}>Scope {scope}</span>;
 }
 
+const CALLOUT_ICON: Record<string, IconName> = { info: 'info', warn: 'alert', attention: 'alert', key: 'checkCircle', critique: 'alert' };
+
 export function Callout({ tone, title, children }: { tone: 'info' | 'warn' | 'key' | 'attention' | 'critique'; title?: string; children: ReactNode }) {
   return (
     <div className={`callout ${tone}`}>
-      {title && <strong>{title}</strong>}
-      {children}
+      <Icon name={CALLOUT_ICON[tone]} size={17} />
+      <div className="callout-body">
+        {title && <strong>{title}</strong>}
+        {children}
+      </div>
     </div>
   );
 }
@@ -138,8 +166,13 @@ export function ProgressBar({ value, color }: { value: number; color?: string })
   );
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <div className="empty">{children}</div>;
+export function Empty({ children, icon = 'inbox' }: { children: ReactNode; icon?: IconName }) {
+  return (
+    <div className="empty">
+      <Icon name={icon} size={28} />
+      {children}
+    </div>
+  );
 }
 
 /** Bouton à confirmation intégrée (les boîtes de dialogue natives sont bloquées dans les cadres intégrés). */
@@ -178,5 +211,26 @@ export function ConfirmButton({
       </button>
       <button onClick={() => setAsking(false)}>Annuler</button>
     </span>
+  );
+}
+
+/** Barre horizontale de répartition des émissions par scope. */
+export function ScopeBar({ values }: { values: Record<1 | 2 | 3, number> }) {
+  const total = values[1] + values[2] + values[3];
+  if (total <= 0) return null;
+  return (
+    <div>
+      <div className="scope-bar" role="img" aria-label="Répartition des émissions par scope">
+        {([1, 2, 3] as const).map((s) => (values[s] > 0 ? <span key={s} style={{ width: `${(values[s] / total) * 100}%`, background: `var(--s${s})` }} /> : null))}
+      </div>
+      <div className="scope-legend">
+        {([1, 2, 3] as const).map((s) => (
+          <span key={s}>
+            <i style={{ background: `var(--s${s})` }} />
+            Scope {s} · {Math.round((values[s] / total) * 100)} %
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { Callout, Card, Field, NumberInput, PageHead, ScopeBadge } from '../components/ui';
 import { CATEGORIES, getCategory } from '../data/categories';
@@ -45,6 +46,8 @@ export function Factors() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Référentiel"
+        icon="calculator"
         title="Facteurs d’émission"
         intro="Base de facteurs par défaut (GIEC, ADEME, DEFRA, IEA). Ordre de préférence : facteur spécifique au site ou au fournisseur → facteur national officiel → facteur générique. Remplacez les valeurs indicatives par vos facteurs officiels."
         actions={<button className="primary" onClick={startNew}>+ Nouveau facteur</button>}
@@ -136,10 +139,10 @@ export function Factors() {
                   <td className="num">{f.defaultPrice !== undefined ? fmt(f.defaultPrice, 3) : '—'}</td>
                   <td className="small muted" style={{ maxWidth: 260 }}>{f.source}</td>
                   <td className="nowrap">
-                    <button className="ghost" onClick={() => startEdit(f)} title="Modifier">✏️</button>
+                    <button className="ghost" onClick={() => startEdit(f)} title="Modifier"><Icon name="edit" size={16} /></button>
                     {overridden.has(f.id) && (
                       <button className="ghost" onClick={() => dispatch({ type: 'factor:delete', id: f.id })} title={DEFAULT_IDS.has(f.id) ? 'Revenir à la valeur par défaut' : 'Supprimer'}>
-                        {DEFAULT_IDS.has(f.id) ? '↺' : '🗑'}
+                        {DEFAULT_IDS.has(f.id) ? <Icon name="swap" size={16} /> : <Icon name="trash" size={16} />}
                       </button>
                     )}
                   </td>
@@ -151,7 +154,7 @@ export function Factors() {
       </Card>
 
       <div className="grid g2">
-        <Card title="PRG des gaz (100 ans)">
+        <Card icon="flame" title="PRG des gaz (100 ans)">
           <table>
             <thead><tr><th>Gaz</th><th className="num">AR5</th><th className="num">AR6</th></tr></thead>
             <tbody>
@@ -161,7 +164,7 @@ export function Factors() {
             </tbody>
           </table>
         </Card>
-        <Card title="PRG des fluides frigorigènes">
+        <Card icon="snowflake" title="PRG des fluides frigorigènes">
           <table>
             <thead><tr><th>Fluide</th><th className="num">AR5</th><th className="num">AR6</th></tr></thead>
             <tbody>

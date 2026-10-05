@@ -282,6 +282,21 @@ export interface DocumentRecord {
   error?: string;
   /** Document d'exemple fourni avec la démonstration. */
   sample?: boolean;
+  /** Origine : déposé par le client sur son portail, ou par le cabinet. */
+  source?: 'client' | 'cabinet';
+  /** Rubrique de la liste des documents demandés. */
+  requestId?: string;
+}
+
+/** Réglages du portail client. */
+export interface PortalSettings {
+  /** Rubriques que le client a déclarées « non concernées ». */
+  notApplicable: string[];
+  /** Le rapport ESG est publié sur le portail du client. */
+  reportPublished: boolean;
+  publishedAt?: string;
+  /** Message du cabinet affiché sur l'accueil du portail. */
+  message?: string;
 }
 
 export interface Vehicle {

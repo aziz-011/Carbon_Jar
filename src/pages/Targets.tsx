@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from 'recharts';
 import { Callout, Card, NumberInput, PageHead, ProgressBar, cssVar } from '../components/ui';
@@ -31,6 +32,8 @@ export function Targets() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Bilan carbone"
+        icon="target"
         title="Objectifs & trajectoire"
         intro="Fixez des objectifs absolus (réduction du tonnage total) ou d’intensité (par unité d’activité), suivez votre trajectoire par rapport à l’année de base. Les crédits carbone ne sont jamais soustraits des émissions."
       />
@@ -73,8 +76,8 @@ export function Targets() {
                 <span className="badge neutral">{t.type === 'absolute' ? 'Absolu' : 'Intensité'}</span>
                 <span className="badge neutral">Scopes {t.scopes.join('+')}</span>
                 {t.scopes.includes(2) && <span className="badge neutral">S2 {t.scope2Method === 'location' ? 'location' : 'market'}-based</span>}
-                <button className="ghost" onClick={() => setDraft(t)}>✏️</button>
-                <button className="ghost danger" onClick={() => dispatch({ type: 'target:delete', id: t.id })}>🗑</button>
+                <button className="ghost" onClick={() => setDraft(t)}><Icon name="edit" size={16} /></button>
+                <button className="ghost danger" onClick={() => dispatch({ type: 'target:delete', id: t.id })}><Icon name="trash" size={16} /></button>
               </>
             }
           >

@@ -38,6 +38,8 @@ export function Advice() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Bilan carbone"
+        icon="trendDown"
         title="Plan de réduction"
         intro={`Leviers de réduction adaptés à votre inventaire ${org.reportingYear}, classés par potentiel. Chaque levier est chiffré en émissions évitées, énergie économisée et gains financiers (fourchettes indicatives à confirmer par une étude de faisabilité).`}
       />
@@ -98,7 +100,7 @@ export function Advice() {
         </Card>
       ))}
 
-      <Card title="Améliorer la qualité de l’inventaire">
+      <Card icon="checkCircle" title="Améliorer la qualité de l’inventaire">
         {advice.map((a, i) => (
           <Callout key={i} tone={a.level === 'info' ? 'info' : a.level}>
             {a.message}

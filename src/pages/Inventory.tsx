@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { Card, PageHead, ScopeBadge } from '../components/ui';
 import { categoriesOfScope, getCategory, SCOPE_LABELS } from '../data/categories';
@@ -72,6 +73,8 @@ export function InventoryPage() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Bilan carbone"
+        icon="cloud"
         title="Inventaire GES"
         intro="Émissions consolidées par scope, catégorie et gaz. Les Scopes 1 et 2 sont déclarés séparément ; le Scope 2 selon les deux méthodes ; le CO2 biogénique et les gaz hors Kyoto hors scopes."
         actions={
@@ -81,12 +84,12 @@ export function InventoryPage() {
                 <option key={y}>{y}</option>
               ))}
             </select>
-            <button onClick={exportCsv}>⬇ Export CSV (piste d’audit)</button>
+            <button onClick={exportCsv}><Icon name="download" size={15} /> Export CSV (piste d’audit)</button>
           </>
         }
       />
 
-      <Card title="Synthèse par scope">
+      <Card icon="cloud" title="Synthèse par scope">
         <div className="table-wrap">
           <table>
             <thead>
@@ -146,7 +149,7 @@ export function InventoryPage() {
       </Card>
 
       <div className="grid g2">
-        <Card title="Scope 2 — double reporting">
+        <Card icon="zap" title="Scope 2 — double reporting">
           <table>
             <thead>
               <tr>
@@ -178,7 +181,7 @@ export function InventoryPage() {
           </p>
         </Card>
 
-        <Card title="Scopes 1 + 2 — ventilation par gaz (t CO2e)">
+        <Card icon="flame" title="Scopes 1 + 2 — ventilation par gaz (t CO2e)">
           <table>
             <tbody>
               {(Object.keys(GAS_LABELS) as GasKey[])
@@ -195,7 +198,7 @@ export function InventoryPage() {
         </Card>
       </div>
 
-      <Card title="Informations déclarées séparément (hors scopes)">
+      <Card icon="info" title="Informations déclarées séparément (hors scopes)">
         <table>
           <tbody>
             <tr>
@@ -220,7 +223,7 @@ export function InventoryPage() {
         </table>
       </Card>
 
-      <Card title="Détail par site">
+      <Card icon="building" title="Détail par site">
         <table>
           <thead>
             <tr>

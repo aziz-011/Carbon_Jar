@@ -35,6 +35,24 @@ Après une modification, régénérez le fichier prêt à ouvrir avec `npm run b
 
 Les données sont enregistrées dans le navigateur (localStorage). Il n’y a pas de serveur. Pour sauvegarder ou restaurer les données, utilisez un fichier JSON : l’export se fait depuis la page **Rapport** et l’import depuis la page **Paramètres**. Un jeu de démonstration (une entreprise chimique) est chargé au premier lancement.
 
+## Deux espaces : portail client et cabinet
+
+**Portail client** (`#/portail`) :
+- **Documents à fournir** : rubriques classées par scope.
+  - Scope 1 : gaz et combustibles, carburant, véhicules et kilométrage, climatisation.
+  - Scope 2 : électricité.
+  - Scope 3 : déplacements, eau, déchets, achats.
+- **Dépôt** : chaque pièce est lue et classée automatiquement à son arrivée. Le client peut déclarer une rubrique « non concernée ».
+- **Onglets progressifs** : ils s’ouvrent au fur et à mesure du dossier. « Mes résultats » s’active dès qu’une donnée est intégrée, « Ma flotte » dès qu’une carte grise est reconnue, « Mon rapport ESG » dès sa publication par le cabinet.
+- **Suivi** : avancement en 5 étapes (collecte → extraction → vérification → bilan carbone → rapport) et questionnaire social et gouvernance.
+
+**Espace cabinet** (ingénieurs) :
+- **Vue d’ensemble** du dossier.
+- **File de vérification** des pièces incertaines.
+- **Bilan carbone** : données d’activité, flotte, inventaire GES, suivi et budgets, plan de réduction, objectifs.
+- **Rapport ESG** : rédaction puis publication sur le portail du client.
+- **Portefeuille** de tous les clients.
+
 ## Version cabinet de conseil
 
 - **Clients** : un dossier par client (sites, documents, inventaire, flotte, budgets, objectifs, rapport). Sauvegarde et restauration de tous les dossiers en JSON.

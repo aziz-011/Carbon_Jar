@@ -10,6 +10,8 @@ export function Classification() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Traitement des données"
+        icon="layers"
         title="Classer les émissions en scopes"
         intro="La question clé : qui possède ou contrôle physiquement la source d’émission, et l’émission résulte-t-elle d’un achat d’énergie ? Utilisez l’assistant pas à pas ou testez un libellé."
       />
@@ -61,7 +63,7 @@ function DecisionWizard() {
   };
 
   return (
-    <Card title="Assistant de classification" actions={path.length > 0 && <button onClick={reset}>Recommencer</button>}>
+    <Card icon="sparkles" title="Assistant de classification" actions={path.length > 0 && <button onClick={reset}>Recommencer</button>}>
       {path.length > 0 && (
         <ol className="small muted" style={{ paddingLeft: '1.2rem' }}>
           {path.map((p, i) => (
@@ -118,7 +120,7 @@ function TextClassifier() {
   const [text, setText] = useState('');
   const result = text.trim() ? classify(text, factors) : undefined;
   return (
-    <Card title="Tester un libellé">
+    <Card icon="search" title="Tester un libellé">
       <p className="small muted">Le moteur reconnaît les mots-clés usuels (factures, ERP, notes de frais) et applique les règles de frontière entre scopes.</p>
       <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ex. : Facture fioul chaudière atelier" />
       <div className="row small" style={{ margin: '8px 0 12px' }}>

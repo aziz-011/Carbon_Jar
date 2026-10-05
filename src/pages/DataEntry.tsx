@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useMemo, useState } from 'react';
 import { FactorSelect } from '../components/FactorSelect';
 import { Callout, Card, Field, NumberInput, PageHead, ScopeBadge, Tabs } from '../components/ui';
@@ -30,6 +31,8 @@ export function DataEntry() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Traitement des données"
+        icon="table"
         title="Données d’activité"
         intro="Saisissez vos consommations (litres, kWh, kg, km, montants…). Chaque donnée est automatiquement classée dans le bon scope et convertie en émissions, énergie et coût : Émissions = Donnée d’activité × Facteur d’émission."
       />
@@ -104,7 +107,7 @@ function ManualEntry() {
           <Field label="Libellé (ex. « Facture gaz janvier »)" wide>
             <div className="row" style={{ flexWrap: 'nowrap' }}>
               <input value={draft.description ?? ''} onChange={(e) => set({ description: e.target.value })} placeholder="Décrivez la donnée puis cliquez sur « Classer automatiquement »" />
-              <button type="button" onClick={suggest} className="nowrap">🧭 Classer automatiquement</button>
+              <button type="button" onClick={suggest} className="nowrap"><Icon name="sparkles" size={15} /> Classer automatiquement</button>
             </div>
           </Field>
           {hint && (
@@ -241,7 +244,7 @@ function ManualEntry() {
                     {r.activity.description || r.factor.label}
                     <div className="small muted">
                       {r.factor.label} · {r.entity?.name}
-                      {r.activity.evidence ? ` · 📎 ${r.activity.evidence}` : ''}
+                      {r.activity.evidence ? ` · pièce : ${r.activity.evidence}` : ''}
                       {r.activity.periodStart && r.activity.periodEnd ? ` · ${r.activity.periodStart} → ${r.activity.periodEnd}` : ''}
                     </div>
                     <div className="formula-line">{formulaText(r, org.gwpSet)}</div>
@@ -277,10 +280,10 @@ function ManualEntry() {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                     >
-                      ✏️
+                      <Icon name="edit" size={16} />
                     </button>
                     <button className="ghost danger" title="Supprimer" onClick={() => dispatch({ type: 'activity:delete', id: r.activity.id })}>
-                      🗑
+                      <Icon name="trash" size={16} />
                     </button>
                   </td>
                 </tr>
@@ -350,13 +353,13 @@ function ImportData({ onDone }: { onDone: () => void }) {
 
   return (
     <>
-      <Card title="1. Fournir les données">
+      <Card icon="upload" title="1. Fournir les données">
         <p className="muted">
           Importez un fichier CSV (export Excel « CSV séparateur point-virgule ») ou collez directement vos lignes. Colonnes reconnues : <code>libellé</code>, <code>quantité</code>, <code>unité</code>, <code>coût</code>, <code>année</code>, <code>site</code>, <code>justificatif</code>. Chaque ligne est classée automatiquement dans le scope adéquat à partir de son libellé et de son unité.
         </p>
         <div className="row" style={{ marginBottom: 12 }}>
           <input type="file" accept=".csv,.txt,.tsv" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])} style={{ maxWidth: 320 }} />
-          <button onClick={() => downloadFile('modele-donnees-carbone.csv', CSV_TEMPLATE)}>⬇ Télécharger le modèle</button>
+          <button onClick={() => downloadFile('modele-donnees-carbone.csv', CSV_TEMPLATE)}><Icon name="download" size={15} /> Télécharger le modèle</button>
           <button
             onClick={() => {
               setText(CSV_TEMPLATE);
@@ -369,7 +372,7 @@ function ImportData({ onDone }: { onDone: () => void }) {
         <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} placeholder={CSV_TEMPLATE} className="mono" />
         <div className="row" style={{ marginTop: 10 }}>
           <button className="primary" onClick={() => analyse(text)} disabled={!text.trim()}>
-            🧭 Analyser et classer
+            <Icon name="sparkles" size={15} /> Analyser et classer
           </button>
           <label className="field" style={{ flexDirection: 'row', alignItems: 'center' }}>
             <span>Site par défaut</span>

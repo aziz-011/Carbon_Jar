@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react';
-import type { Activity, Budget, DocumentRecord, EmissionFactor, Entity, EsgYear, Organization, Target, Vehicle } from '../domain/types';
+import type { Activity, Budget, DocumentRecord, EmissionFactor, Entity, EsgYear, Organization, PortalSettings, Target, Vehicle } from '../domain/types';
 import { DEFAULT_FACTORS } from '../data/emissionFactors';
 import { computeInventory, type Inventory } from '../lib/calc';
 import { plateKey } from '../lib/documents/commit';
@@ -19,6 +19,7 @@ export interface AppState {
   budgets: Budget[];
   /** Indicateurs sociaux et de gouvernance par année. */
   esg: Record<number, EsgYear>;
+  portal: PortalSettings;
 }
 
 export interface ClientRecord {
@@ -54,6 +55,7 @@ export type Action =
   | { type: 'budget:upsert'; budget: Budget }
   | { type: 'budget:delete'; id: string }
   | { type: 'esg'; year: number; patch: Partial<EsgYear> }
+  | { type: 'portal'; patch: Partial<PortalSettings> }
   | { type: 'reset'; state: AppState };
 
 export type WorkspaceAction =
@@ -79,6 +81,7 @@ export const DEMO_STATE: AppState = {
   vehicles: DEMO_VEHICLES,
   budgets: DEMO_BUDGETS,
   esg: DEMO_ESG,
+  portal: { notApplicable: ['achats'], reportPublished: false, message: 'Merci de déposer vos factures 2025. Nous revenons vers vous dès réception.' },
 };
 
 export function emptyState(name = 'Nouveau client'): AppState {
@@ -93,6 +96,7 @@ export function emptyState(name = 'Nouveau client'): AppState {
     vehicles: [],
     budgets: [],
     esg: {},
+    portal: { notApplicable: [], reportPublished: false },
   };
 }
 
@@ -107,6 +111,7 @@ function normalizeState(s: Partial<AppState>): AppState {
     vehicles: s.vehicles ?? [],
     budgets: s.budgets ?? [],
     esg: s.esg ?? {},
+    portal: { ...base.portal, ...(s.portal ?? {}) },
   } as AppState;
 }
 
@@ -208,6 +213,8 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, budgets: state.budgets.filter((b) => b.id !== action.id) };
     case 'esg':
       return { ...state, esg: { ...state.esg, [action.year]: { ...(state.esg[action.year] ?? {}), ...action.patch } } };
+    case 'portal':
+      return { ...state, portal: { ...state.portal, ...action.patch } };
     case 'reset':
       return normalizeState(action.state);
   }

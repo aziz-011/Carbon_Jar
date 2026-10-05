@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { Callout, Card, ConfirmButton, NumberInput, PageHead } from '../components/ui';
 import { GRID_ZONES } from '../data/emissionFactors';
@@ -31,11 +32,13 @@ export function Boundary() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Configuration"
+        icon="building"
         title="Périmètre organisationnel"
         intro="Définissez les entités (filiales, sites, coentreprises) et l’approche de consolidation. Le choix doit être documenté et appliqué de manière constante ; un changement d’approche déclenche le recalcul de l’année de base."
       />
 
-      <Card title="Approche de consolidation">
+      <Card icon="layers" title="Approche de consolidation">
         <div className="grid g3">
           {APPROACHES.map(([id, label, desc]) => (
             <label key={id} className="card" style={{ cursor: 'pointer', borderColor: org.consolidation === id ? 'var(--accent)' : undefined }}>
@@ -49,7 +52,7 @@ export function Boundary() {
         </div>
       </Card>
 
-      <Card title="Entités du périmètre">
+      <Card icon="building" title="Entités du périmètre">
         <div className="table-wrap">
           <table>
             <thead>
@@ -69,15 +72,15 @@ export function Boundary() {
                   <td>{e.name}</td>
                   <td>{GRID_ZONES.find((z) => z.code === e.country)?.name ?? e.country}</td>
                   <td className="num">{fmt(e.equityShare)} %</td>
-                  <td>{e.financialControl ? '✔︎' : '—'}</td>
-                  <td>{e.operationalControl ? '✔︎' : '—'}</td>
+                  <td>{e.financialControl ? 'Oui' : '—'}</td>
+                  <td>{e.operationalControl ? 'Oui' : '—'}</td>
                   <td className="num">
                     <strong>{fmt(consolidationShare(e, org.consolidation) * 100)} %</strong>
                   </td>
                   <td className="nowrap">
-                    <button className="ghost" onClick={() => setDraft(e)} title="Modifier">✏️</button>
+                    <button className="ghost" onClick={() => setDraft(e)} title="Modifier"><Icon name="edit" size={16} /></button>
                     <ConfirmButton className="ghost danger" title="Supprimer" question="Supprimer l’entité et ses données ?" onConfirm={() => dispatch({ type: 'entity:delete', id: e.id })}>
-                      🗑
+                      <Icon name="trash" size={16} />
                     </ConfirmButton>
                   </td>
                 </tr>

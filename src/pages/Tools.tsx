@@ -12,7 +12,7 @@ import { useStore } from '../state/store';
 export function Tools() {
   return (
     <div className="stack">
-      <PageHead title="Calculateurs" intro="Les formules du bilan carbone, prêtes à l’emploi : calcul d’émissions, bilan massique des fluides, double reporting Scope 2, consolidation, recalcul de l’année de base, intensité, conversions d’énergie." />
+      <PageHead eyebrow="Ressources" icon="calculator" title="Calculateurs" intro="Les formules du bilan carbone, prêtes à l’emploi : calcul d’émissions, bilan massique des fluides, double reporting Scope 2, consolidation, recalcul de l’année de base, intensité, conversions d’énergie." />
       <div className="grid g2">
         <QuickCalc />
         <Refrigerant />
@@ -34,7 +34,7 @@ function QuickCalc() {
   const u = f ? perUnitEmissions(f, state.org.gwpSet) : undefined;
   const total = u && qty ? sumGases(u.byGas) * qty : 0;
   return (
-    <Card title="Calcul d’émissions">
+    <Card icon="calculator" title="Calcul d’émissions">
       <Formula label="Formule" formula="Émissions = Donnée d’activité × Facteur d’émission" />
       <div className="form-grid">
         <Field label="Source" wide>
@@ -88,7 +88,7 @@ function Refrigerant() {
   const gwp = refrigerantGwp(fluid, state.org.gwpSet);
   const r = REFRIGERANTS.find((x) => x.id === fluid);
   return (
-    <Card title="Bilan massique des fluides frigorigènes">
+    <Card icon="snowflake" title="Bilan massique des fluides frigorigènes">
       <Formula label="Formule" formula="Fuite = Charge initiale + Recharges − Charge finale (+ capacité retirée − capacité neuve)" note="Émissions = Fuite (kg) × PRG du fluide" />
       <div className="form-grid">
         <Field label="Fluide">
@@ -126,7 +126,7 @@ function Scope2Dual() {
   const lb = (k * grid) / 1000;
   const mb = (covered * (instFactor ?? 0) + (k - covered) * (residual ?? grid)) / 1000;
   return (
-    <Card title="Scope 2 — double reporting">
+    <Card icon="zap" title="Scope 2 — double reporting">
       <Formula label="Location-based" formula="kWh × facteur moyen du réseau" />
       <Formula label="Market-based" formula="kWh couverts × facteur de l’instrument + kWh restants × mix résiduel" />
       <div className="form-grid">
@@ -161,7 +161,7 @@ function Consolidation() {
   const [op, setOp] = useState(false);
   const e = em ?? 0;
   return (
-    <Card title="Consolidation d’une entité">
+    <Card icon="building" title="Consolidation d’une entité">
       <Formula label="Part de capital" formula="Émissions × % de participation" />
       <Formula label="Contrôle" formula="Émissions × (100 % si contrôle, sinon 0 %)" />
       <div className="form-grid">
@@ -189,7 +189,7 @@ function BaseYear() {
   const [th, setTh] = useState<number | undefined>(5);
   const r = baseYearRecalculation({ baseYearEmissions: base ?? 0, acquiredEmissions: acq ?? 0, divestedEmissions: div ?? 0, methodologyDelta: meth ?? 0, thresholdPct: th ?? 5 });
   return (
-    <Card title="Recalcul de l’année de base">
+    <Card icon="clock" title="Recalcul de l’année de base">
       <Formula label="Test de signification" formula="Σ |changements| ÷ émissions de base ≥ seuil ⇒ recalcul" note="Croissance organique (nouvelle usine construite) : pas de recalcul." />
       <div className="form-grid">
         <Field label="Émissions de l’année de base (t)"><NumberInput value={base} onChange={setBase} min={0} /></Field>
@@ -213,7 +213,7 @@ function IntensityAndCost() {
   const [price, setPrice] = useState<number | undefined>(state.org.carbonPrice);
   const ratio = intensityRatio(em ?? 0, metric);
   return (
-    <Card title="Intensité et coût du carbone">
+    <Card icon="gauge" title="Intensité et coût du carbone">
       <Formula label="Ratio d’intensité" formula="Émissions ÷ métrique d’activité (t produites, CA, salariés, m²)" />
       <Formula label="Exposition financière" formula="Émissions × prix du carbone" />
       <div className="form-grid">
@@ -253,7 +253,7 @@ function EnergyConverter() {
   const [from, setFrom] = useState('tep (tonne équivalent pétrole)');
   const kwh = (val ?? 0) * (ENERGY_UNITS.find(([u]) => u === from)?.[1] ?? 1);
   return (
-    <Card title="Conversions d’énergie">
+    <Card icon="zap" title="Conversions d’énergie">
       <div className="form-grid">
         <Field label="Valeur"><NumberInput value={val} onChange={setVal} /></Field>
         <Field label="Unité">

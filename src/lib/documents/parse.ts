@@ -270,10 +270,12 @@ export function extractVehicle(raw: string): ExtractedVehicle {
 }
 
 /** Analyse complète d'un texte de document. */
-export function parseDocument(text: string, filename: string, factors: EmissionFactor[], country = 'TN'): Extraction {
+export function parseDocument(text: string, filename: string, factors: EmissionFactor[], country = 'TN', hintType?: DocType): Extraction {
   const t = flat(text);
   const warnings: string[] = [];
   const detected = detectDocType(text, filename);
+  // Rubrique choisie par le client : elle prime lorsque la reconnaissance est incertaine.
+  if (hintType && hintType !== detected.type && detected.score < 4) detected.type = hintType;
   const type = detected.type;
   let lines: ExtractedLine[] = [];
   let vehicle: ExtractedVehicle | undefined;

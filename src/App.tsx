@@ -19,6 +19,12 @@ import { Tracking } from './pages/Tracking';
 import { EsgData } from './pages/EsgData';
 import { EsgReport } from './pages/EsgReport';
 import { Clients } from './pages/Clients';
+import { PortalHome } from './pages/portal/PortalHome';
+import { PortalDocuments } from './pages/portal/PortalDocuments';
+import { PortalResults } from './pages/portal/PortalResults';
+import { PortalFleet } from './pages/portal/PortalFleet';
+import { PortalQuestionnaire } from './pages/portal/PortalQuestionnaire';
+import { PortalReport } from './pages/portal/PortalReport';
 
 export function App() {
   return (
@@ -45,6 +51,12 @@ export function App() {
             <Route path="/esg" element={<EsgData />} />
             <Route path="/rapport-esg" element={<EsgReport />} />
             <Route path="/clients" element={<Clients />} />
+            <Route path="/portail" element={<PortalHome />} />
+            <Route path="/portail/documents" element={<PortalDocuments />} />
+            <Route path="/portail/resultats" element={<PortalResults />} />
+            <Route path="/portail/flotte" element={<PortalFleet />} />
+            <Route path="/portail/questionnaire" element={<PortalQuestionnaire />} />
+            <Route path="/portail/rapport" element={<PortalReport />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>

@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { Callout, Card, ConfirmButton, Field, NumberInput, PageHead } from '../components/ui';
 import { GWP_SET_LABELS } from '../data/gwp';
@@ -37,9 +38,9 @@ export function Settings() {
 
   return (
     <div className="stack">
-      <PageHead title="Paramètres" intro="Organisation, période de reporting, année de base, PRG, devise et prix carbone. Les données sont enregistrées localement dans votre navigateur." />
+      <PageHead eyebrow="Configuration" icon="sliders" title="Paramètres" intro="Organisation, période de reporting, année de base, PRG, devise et prix carbone. Les données sont enregistrées localement dans votre navigateur." />
 
-      <Card title="Organisation">
+      <Card icon="building" title="Organisation">
         <div className="form-grid">
           <Field label="Nom">
             <input value={org.name} onChange={(e) => patch({ name: e.target.value })} />
@@ -82,7 +83,7 @@ export function Settings() {
         </Callout>
       </Card>
 
-      <Card title="Métrique d’intensité">
+      <Card icon="gauge" title="Métrique d’intensité">
         <div className="form-grid">
           <Field label="Unité d’activité" hint="Ex. tonne produite, M€ de CA, salarié, m², patient, étudiant">
             <input value={org.intensityMetricLabel} onChange={(e) => patch({ intensityMetricLabel: e.target.value })} />
@@ -95,10 +96,10 @@ export function Settings() {
         </div>
       </Card>
 
-      <Card title="Données">
+      <Card icon="folder" title="Données">
         <div className="row">
           <label className="btn">
-            ⬆ Restaurer une sauvegarde du client (JSON)
+            <Icon name="upload" size={15} /> Restaurer une sauvegarde du client (JSON)
             <input type="file" accept="application/json,.json" hidden onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} />
           </label>
           <ConfirmButton question="Remplacer les données actuelles par la démonstration ?" onConfirm={() => dispatch({ type: 'reset', state: DEMO_STATE })}>

@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { Card, PageHead, ScopeBadge } from '../components/ui';
 import { categoriesOfScope, getCategory } from '../data/categories';
 import { GWP_SET_LABELS } from '../data/gwp';
@@ -37,22 +38,24 @@ export function Report() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Rapport"
+        icon="shield"
         title={`Rapport GES ${org.reportingYear}`}
         intro="Rapport structuré selon les exigences de déclaration du GHG Protocol (informations requises et optionnelles). Imprimez-le en PDF pour le partager ou le transmettre à un vérificateur."
         actions={
           <>
-            {!isEmbedded() && <button onClick={() => window.print()}>🖨 Imprimer / PDF</button>}
-            <button onClick={exportJson}>⬇ Sauvegarde JSON</button>
+            {!isEmbedded() && <button onClick={() => window.print()}><Icon name="printer" size={15} /> Imprimer / PDF</button>}
+            <button onClick={exportJson}><Icon name="download" size={15} /> Sauvegarde JSON</button>
           </>
         }
       />
 
-      <Card title="Liste de contrôle de conformité">
+      <Card icon="checks" title="Liste de contrôle de conformité">
         <table>
           <tbody>
             {checks.map(([label, ok, detail]) => (
               <tr key={label}>
-                <td style={{ width: 28 }}>{ok ? '✅' : '⚠️'}</td>
+                <td style={{ width: 28 }}>{ok ? <Icon name="checkCircle" size={17} className="ok-ico" /> : <Icon name="alert" size={17} className="warn-ico" />}</td>
                 <td>{label}</td>
                 <td className="right muted">{detail}</td>
               </tr>

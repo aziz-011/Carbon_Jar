@@ -1,6 +1,9 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Steps } from '../components/progress';
+import { workflowSteps } from '../lib/progress';
 import { Callout, Card, PageHead, ScopeBadge, Stat, Tabs, cssVar, scopeColor } from '../components/ui';
 import { getCategory } from '../data/categories';
 import { GRID_ZONES } from '../data/emissionFactors';
@@ -70,7 +73,9 @@ export function Dashboard() {
   return (
     <div className="stack">
       <PageHead
-        title="Tableau de bord"
+        eyebrow="Vue d’ensemble"
+        icon="dashboard"
+        title={state.org.name}
         intro={`Empreinte carbone ${org.reportingYear} de ${org.name} — GHG Protocol, consolidation « ${
           { equity: 'part de capital', financial: 'contrôle financier', operational: 'contrôle opérationnel' }[org.consolidation]
         } », PRG ${org.gwpSet}.`}
@@ -81,6 +86,19 @@ export function Dashboard() {
           </select>
         }
       />
+
+      <Card
+        icon="layers"
+        title="Avancement du dossier"
+        actions={
+          <>
+            <Link className="btn" to="/documents"><Icon name="checks" size={15} /> File de vérification</Link>
+            <Link className="btn" to="/portail"><Icon name="eye" size={15} /> Portail du client</Link>
+          </>
+        }
+      >
+        <Steps steps={workflowSteps(state, inv)} />
+      </Card>
 
       {state.documents.some((d) => d.status === 'a_valider') && (
         <Callout tone="attention" title="Documents en attente">
@@ -97,25 +115,25 @@ export function Dashboard() {
       <div className="grid g4">
         <Stat
           accent="main"
-          label="Émissions totales (S1+S2+S3)"
+          icon="cloud" label="Émissions totales (S1+S2+S3)"
           value={fmtT(total)}
           sub={delta !== undefined ? `${delta <= 0 ? '▼' : '▲'} ${fmtPct(Math.abs(delta), 1)} vs ${org.baseYear}` : `Scope 2 ${method === 'location' ? 'location' : 'market'}-based`}
         />
-        <Stat label="Énergie consommée" value={fmtMWh(inv.energyMWh)} sub={`${fmt(inv.energyByScope[1])} MWh combustibles · ${fmt(inv.energyByScope[2])} MWh achetés`} />
-        <Stat label="Dépenses associées" value={fmtMoney(inv.cost, org.currency)} sub={inv.costEstimatedShare > 0 ? `dont ${fmtPct(inv.costEstimatedShare)} estimés` : 'coûts réels saisis'} />
+        <Stat icon="zap" label="Énergie consommée" value={fmtMWh(inv.energyMWh)} sub={`${fmt(inv.energyByScope[1])} MWh combustibles · ${fmt(inv.energyByScope[2])} MWh achetés`} />
+        <Stat icon="briefcase" label="Dépenses associées" value={fmtMoney(inv.cost, org.currency)} sub={inv.costEstimatedShare > 0 ? `dont ${fmtPct(inv.costEstimatedShare)} estimés` : 'coûts réels saisis'} />
         <Stat
-          label="Exposition au prix du carbone"
+          icon="alert" label="Exposition au prix du carbone"
           value={fmtMoney(carbonCostExposure(inv.scope1 + s2, org.carbonPrice), org.currency)}
           sub={`S1+S2 × ${fmt(org.carbonPrice)} ${org.currency}/t`}
         />
       </div>
 
       <div className="grid g4">
-        <Stat accent="s1" label="Scope 1 — directes" value={fmtT(inv.scope1)} sub={fmtPct(share(inv.scope1))} />
-        <Stat accent="s2" label={`Scope 2 — énergie (${method === 'location' ? 'LB' : 'MB'})`} value={fmtT(s2)} sub={`${fmtPct(share(s2))} · ${method === 'location' ? 'MB' : 'LB'} : ${fmtT(method === 'location' ? inv.scope2Market : inv.scope2Location)}`} />
-        <Stat accent="s3" label="Scope 3 — chaîne de valeur" value={fmtT(inv.scope3)} sub={fmtPct(share(inv.scope3))} />
+        <Stat accent="s1" icon="flame" label="Scope 1 — directes" value={fmtT(inv.scope1)} sub={fmtPct(share(inv.scope1))} />
+        <Stat accent="s2" icon="zap" label={`Scope 2 — énergie (${method === 'location' ? 'LB' : 'MB'})`} value={fmtT(s2)} sub={`${fmtPct(share(s2))} · ${method === 'location' ? 'MB' : 'LB'} : ${fmtT(method === 'location' ? inv.scope2Market : inv.scope2Location)}`} />
+        <Stat accent="s3" icon="globe" label="Scope 3 — chaîne de valeur" value={fmtT(inv.scope3)} sub={fmtPct(share(inv.scope3))} />
         <Stat
-          label="Intensité carbone"
+          icon="gauge" label="Intensité carbone"
           value={intensity !== undefined ? fmt(intensity, 3) : '—'}
           sub={intensity !== undefined ? `t CO2e / ${org.intensityMetricLabel}` : <Link to="/parametres">Définir la métrique d’activité</Link>}
         />
@@ -155,7 +173,7 @@ export function Dashboard() {
       )}
 
       <div className="grid g2">
-        <Card title="Répartition par scope" actions={<Tabs value={lens} onChange={setLens} tabs={[['emissions', 'CO2e'], ['energy', 'Énergie'], ['cost', 'Coût']]} />}>
+        <Card icon="layers" title="Répartition par scope" actions={<Tabs value={lens} onChange={setLens} tabs={[['emissions', 'CO2e'], ['energy', 'Énergie'], ['cost', 'Coût']]} />}>
           {pieData.length ? (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -178,7 +196,7 @@ export function Dashboard() {
           )}
         </Card>
 
-        <Card title="Principaux postes">
+        <Card icon="chart" title="Principaux postes">
           {catData.length ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={catData} layout="vertical" margin={{ left: 10, right: 20 }}>
@@ -200,7 +218,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid g2">
-        <Card title="Évolution annuelle (t CO2e)">
+        <Card icon="chart" title="Évolution annuelle (t CO2e)">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={trend}>
               <CartesianGrid vertical={false} stroke={grid} />
@@ -215,7 +233,7 @@ export function Dashboard() {
           </ResponsiveContainer>
         </Card>
 
-        <Card title="Sources les plus émettrices" actions={<Link to="/inventaire">Inventaire complet →</Link>}>
+        <Card icon="target" title="Sources les plus émettrices" actions={<Link to="/inventaire">Inventaire complet →</Link>}>
           <div className="table-wrap">
             <table>
               <thead>
@@ -247,7 +265,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid">
-        <Card title="Qualité et conformité de l’inventaire">
+        <Card icon="shield" title="Qualité et conformité de l’inventaire">
           {advice.length === 0 && <p className="muted">Aucun point d’attention.</p>}
           {advice.map((a, i) => (
             <Callout key={i} tone={a.level === 'info' ? 'info' : a.level}>

@@ -1,3 +1,4 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { Callout, Card, ConfirmButton, Field, NumberInput, PageHead, Stat } from '../components/ui';
 import type { Activity, Vehicle, VehicleEnergy } from '../domain/types';
@@ -65,6 +66,8 @@ export function Fleet() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Scope 1 · combustion mobile"
+        icon="car"
         title="Flotte de véhicules"
         intro={`Registre alimenté par les cartes grises et fiches techniques déposées dans « Documents ». Les véhicules détenus ou contrôlés relèvent du Scope 1 (thermiques) ou du Scope 2 (électriques). Année ${year}.`}
       />
@@ -75,7 +78,7 @@ export function Fleet() {
         <Stat label="Coût carburant" value={fmtMoney(rows.reduce((s, r) => s + r.cost, 0), org.currency)} />
       </div>
 
-      <Card title="Véhicules">
+      <Card icon="car" title="Véhicules">
         {vehicles.length === 0 ? (
           <p className="empty">Aucun véhicule. Déposez une carte grise dans « Documents » ou ajoutez un véhicule ci-dessous.</p>
         ) : (
@@ -121,9 +124,9 @@ export function Fleet() {
                           {r.estimated.length ? 'Mettre à jour' : 'Estimer'}
                         </button>
                       )}
-                      <button className="ghost" onClick={() => setDraft(r.v)} title="Modifier">✏️</button>
+                      <button className="ghost" onClick={() => setDraft(r.v)} title="Modifier"><Icon name="edit" size={16} /></button>
                       <ConfirmButton className="ghost danger" title="Supprimer" question="Retirer ce véhicule du registre ?" onConfirm={() => dispatch({ type: 'vehicle:delete', id: r.v.id })}>
-                        🗑
+                        <Icon name="trash" size={16} />
                       </ConfirmButton>
                     </td>
                   </tr>

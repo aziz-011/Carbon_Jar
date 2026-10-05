@@ -1,8 +1,11 @@
+import { Icon } from '../components/Icon';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Callout, Card, ConfirmButton, Field, PageHead, Stat } from '../components/ui';
 import type { Sector } from '../domain/types';
 import { computeInventory } from '../lib/calc';
+import { collectionRate, requestProgress } from '../lib/progress';
+import { ProgressBar } from '../components/ui';
 import { downloadFile } from '../lib/csv';
 import { fmt, uid } from '../lib/format';
 import { emptyState, mergeFactors, useStore, type Workspace } from '../state/store';
@@ -36,6 +39,7 @@ export function Clients() {
       pending: s.documents.filter((d) => d.status === 'a_valider').length,
       docs: s.documents.length,
       hasEsg: !!s.esg[s.org.reportingYear]?.headcount,
+      collection: collectionRate(requestProgress(s)),
     };
   });
 
@@ -62,6 +66,8 @@ export function Clients() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Pilotage"
+        icon="briefcase"
         title="Clients"
         intro="Chaque client dispose de son propre espace : sites, documents, inventaire, flotte, budgets, objectifs et rapport ESG. Sélectionnez un client pour travailler sur son dossier."
       />
@@ -72,7 +78,7 @@ export function Clients() {
         <Stat label="Émissions suivies" value={`${fmt(rows.reduce((s, r) => s + r.inv.totalLocation, 0))} t CO2e`} sub="dernier exercice de chaque client" />
       </div>
 
-      <Card title="Portefeuille">
+      <Card icon="briefcase" title="Portefeuille">
         <div className="table-wrap">
           <table>
             <thead>
@@ -86,7 +92,7 @@ export function Clients() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ c, inv, pending, docs, hasEsg }) => {
+              {rows.map(({ c, inv, pending, docs, hasEsg, collection }) => {
                 const active = c.id === workspace.activeId;
                 return (
                   <tr key={c.id}>
@@ -100,9 +106,17 @@ export function Clients() {
                       {docs}
                       {pending > 0 && <div className="small"><span className="badge warn">{pending} à valider</span></div>}
                     </td>
-                    <td className="small">
-                      <div>{inv.results.length ? '✓ inventaire' : '○ inventaire'}</div>
-                      <div>{hasEsg ? '✓ données ESG' : '○ données ESG'}</div>
+                    <td className="small" style={{ minWidth: 170 }}>
+                      <div className="row" style={{ justifyContent: 'space-between' }}>
+                        <span>Collecte</span>
+                        <strong>{collection.done}/{collection.total}</strong>
+                      </div>
+                      <ProgressBar value={collection.rate} />
+                      <div className="row" style={{ marginTop: 4, gap: 6 }}>
+                        <span className={`badge ${inv.results.length ? 'ok' : 'neutral'}`}>Bilan</span>
+                        <span className={`badge ${hasEsg ? 'ok' : 'neutral'}`}>ESG</span>
+                        <span className={`badge ${c.state.portal.reportPublished ? 'ok' : 'neutral'}`}>Rapport</span>
+                      </div>
                     </td>
                     <td className="nowrap">
                       <button
@@ -115,7 +129,7 @@ export function Clients() {
                         Ouvrir
                       </button>
                       <ConfirmButton className="ghost danger" title="Supprimer" question={`Supprimer le dossier « ${c.state.org.name} » ?`} onConfirm={() => wsDispatch({ type: 'client:delete', id: c.id })}>
-                        🗑
+                        <Icon name="trash" size={16} />
                       </ConfirmButton>
                     </td>
                   </tr>
@@ -127,7 +141,7 @@ export function Clients() {
       </Card>
 
       <div className="grid g2">
-        <Card title="Nouveau client">
+        <Card icon="plus" title="Nouveau client">
           <div className="form-grid">
             <Field label="Raison sociale">
               <input id="cl-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex. : Société Industrielle de Sousse" onKeyDown={(e) => e.key === 'Enter' && add()} />
@@ -145,7 +159,7 @@ export function Clients() {
           </div>
         </Card>
 
-        <Card title="Cabinet et sauvegarde">
+        <Card icon="folder" title="Cabinet et sauvegarde">
           <Field label="Nom du cabinet (affiché sur les rapports)">
             <input id="cl-firm" value={workspace.firmName} onChange={(e) => wsDispatch({ type: 'firm', name: e.target.value })} />
           </Field>

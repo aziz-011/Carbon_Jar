@@ -57,6 +57,8 @@ export function EsgData() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Rapport"
+        icon="users"
         title="Données ESG"
         intro="Indicateurs sociaux et de gouvernance, compléments environnementaux et synthèse du rapport. Les émissions, l’énergie et les coûts proviennent automatiquement de l’inventaire."
         actions={
@@ -71,7 +73,7 @@ export function EsgData() {
         }
       />
 
-      <Card title="Synthèse exécutive">
+      <Card icon="report" title="Synthèse exécutive">
         <textarea id="esg-summary" rows={8} value={esg.executiveSummary ?? ''} onChange={(e) => patch({ executiveSummary: e.target.value })} placeholder="Laissez vide pour une synthèse générée automatiquement à partir des résultats." />
         <div className="row" style={{ marginTop: 8 }}>
           <button onClick={() => patch({ executiveSummary: auto() })}>Générer à partir des résultats</button>
@@ -85,16 +87,16 @@ export function EsgData() {
         {aiError && <Callout tone="warn">{aiError}</Callout>}
       </Card>
 
-      <Card title="Social">
+      <Card icon="users" title="Social">
         <div className="form-grid">{SOCIAL_FIELDS.map((f) => num(f.key, f.label, f.unit, f.ref))}</div>
       </Card>
 
-      <Card title="Environnement — compléments">
+      <Card icon="droplet" title="Environnement — compléments">
         <div className="form-grid">{ENV_EXTRA_FIELDS.map((f) => num(f.key, f.label, f.unit, f.ref))}</div>
         <p className="small muted" style={{ marginTop: 8 }}>Si laissés vides, l’eau et les déchets sont repris des données d’activité (factures SONEDE, bordereaux).</p>
       </Card>
 
-      <Card title="Gouvernance">
+      <Card icon="shield" title="Gouvernance">
         <div className="form-grid">{GOVERNANCE_FIELDS.map((f) => num(f.key, f.label, f.unit, f.ref))}</div>
         <div className="practices">
           {GOVERNANCE_PRACTICES.map((p) => (
@@ -106,7 +108,7 @@ export function EsgData() {
         </div>
       </Card>
 
-      <Card title="Engagements et prochaines étapes">
+      <Card icon="target" title="Engagements et prochaines étapes">
         <textarea id="esg-commitments" rows={5} value={esg.commitments ?? ''} onChange={(e) => patch({ commitments: e.target.value })} placeholder="Ex. : audit énergétique ANME en 2026, installation photovoltaïque de 500 kWc, plan de mobilité…" />
       </Card>
     </div>

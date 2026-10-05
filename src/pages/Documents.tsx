@@ -1,129 +1,44 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FactorSelect } from '../components/FactorSelect';
-import { Callout, Card, ConfirmButton, Field, NumberInput, PageHead, ScopeBadge, Stat, Tabs } from '../components/ui';
+import { Icon } from '../components/Icon';
+import { Callout, Card, ConfirmButton, Empty, Field, NumberInput, PageHead, ScopeBadge, Stat, Tabs } from '../components/ui';
 import { getCategory } from '../data/categories';
+import { DOC_TYPE_ICON } from '../data/docIcons';
+import { DOCUMENT_REQUESTS } from '../data/documentRequests';
 import { SAMPLE_DOCUMENTS } from '../data/sampleDocuments';
 import type { DocType, DocumentRecord, DocumentStatus, Extraction, ExtractedLine, VehicleEnergy } from '../domain/types';
 import { computeActivity } from '../lib/calc';
-import { aiExtract, aiImageSupport, getSample } from '../lib/documents/ai';
-import { checkLines, extractionToActivities, mergeVehicle } from '../lib/documents/commit';
-import { DOC_TYPE_LABELS, detectDocType, parseDocument } from '../lib/documents/parse';
+import { checkLines } from '../lib/documents/commit';
+import { DOC_TYPE_LABELS } from '../lib/documents/parse';
 import { isImage, isPdf, readDocumentText, renderPdfFirstPage } from '../lib/documents/read';
-import { deleteFile, loadFile, saveFile } from '../lib/fileStore';
-import { fmt, fmtMoney, uid } from '../lib/format';
+import { deleteFile, loadFile } from '../lib/fileStore';
+import { fmt, fmtMoney } from '../lib/format';
 import { fmtMass, formulaText } from '../lib/tracking';
 import { useStore } from '../state/store';
+import { AUTO_THRESHOLD, useDocumentPipeline } from '../state/usePipeline';
 
-const STATUS_LABEL: Record<DocumentStatus, string> = { a_valider: 'À valider', valide: 'Validé', rejete: 'Rejeté', erreur: 'Erreur' };
-const STATUS_BADGE: Record<DocumentStatus, string> = { a_valider: 'warn', valide: 'ok', rejete: 'neutral', erreur: 'danger' };
-const AUTO_THRESHOLD = 0.8;
+export const STATUS_LABEL: Record<DocumentStatus, string> = { a_valider: 'À vérifier', valide: 'Intégré au bilan', rejete: 'Rejeté', erreur: 'Erreur de lecture' };
+export const STATUS_BADGE: Record<DocumentStatus, string> = { a_valider: 'warn', valide: 'ok', rejete: 'neutral', erreur: 'danger' };
 
 type Filter = DocumentStatus | 'tous';
 
+/** Espace cabinet : file de vérification des documents déposés par le client ou le cabinet. */
 export function Documents() {
-  const { state, dispatch, factors, factorById } = useStore();
+  const { state, dispatch, factorById } = useStore();
   const { org, entities, documents } = state;
+  const { aiAvailable, aiImages, queue, processFiles, validate, analyse } = useDocumentPipeline();
   const [entityId, setEntityId] = useState(entities[0]?.id ?? '');
   const [year, setYear] = useState(org.reportingYear);
   const [autoValidate, setAutoValidate] = useState(true);
   const [useAi, setUseAi] = useState(true);
-  const [aiAvailable, setAiAvailable] = useState(false);
-  const [aiImages, setAiImages] = useState(false);
-  const [queue, setQueue] = useState<Array<{ name: string; step: string }>>([]);
-  const [filter, setFilter] = useState<Filter>('a_valider');
+  const [filter, setFilter] = useState<Filter>(documents.some((d) => d.status === 'a_valider') ? 'a_valider' : 'tous');
   const [openId, setOpenId] = useState<string>();
   const [drag, setDrag] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let alive = true;
-    getSample().then((s) => alive && setAiAvailable(!!s));
-    aiImageSupport().then((i) => alive && setAiImages(!!i));
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   const entity = entities.find((e) => e.id === entityId) ?? entities[0];
-  const country = entity?.country ?? 'TN';
-
-  /** Valide un document si l'extraction est complète et suffisamment sûre. */
-  const tryAutoValidate = (doc: DocumentRecord, e: Extraction): boolean => {
-    if (!autoValidate || e.confidence < AUTO_THRESHOLD) return false;
-    const checks = checkLines(e, factorById);
-    const vehicleOnly = (e.docType === 'carte_grise' || e.docType === 'fiche_vehicule') && !!e.vehicle?.plate;
-    if (!vehicleOnly && (checks.length === 0 || checks.some((c) => !c.ok))) return false;
-    validate(doc, e);
-    return true;
-  };
-
-  const validate = (doc: DocumentRecord, e: Extraction) => {
-    const vehicle = mergeVehicle(state.vehicles, e, doc);
-    const activities = extractionToActivities(doc, e, factorById, vehicle);
-    dispatch({ type: 'document:upsert', document: { ...doc, extraction: e } });
-    dispatch({ type: 'document:validate', documentId: doc.id, activities, vehicle });
-  };
-
-  const analyse = async (file: File | undefined, doc: DocumentRecord, text: string, scanned: boolean, wantAi: boolean): Promise<Extraction> => {
-    if (wantAi && aiAvailable) {
-      let image: Blob | undefined;
-      if (file && isImage(file) && aiImages) image = file;
-      else if (file && isPdf(file) && scanned && aiImages) image = await renderPdfFirstPage(await file.arrayBuffer());
-      if (text.trim() || image) {
-        try {
-          return await aiExtract({ text, filename: doc.name, image, factors, country });
-        } catch (err) {
-          const code = (err as { code?: string }).code;
-          if (code === 'not_granted' || code === 'sampling_disabled') setAiAvailable(false);
-          // Repli sur l'analyse locale du texte.
-        }
-      }
-    }
-    if (text.trim()) return parseDocument(text, doc.name, factors, country);
-    const guess = detectDocType('', doc.name);
-    return {
-      docType: guess.type,
-      method: 'manuel',
-      lines: [],
-      confidence: 0,
-      warnings: [scanned ? 'Document scanné ou image : le texte n’a pas pu être lu sur cet appareil. Saisissez les valeurs (ou ouvrez la plateforme sur claude.ai pour une lecture automatique).' : 'Aucun texte lisible : saisissez les valeurs.'],
-    };
-  };
-
-  const processFiles = async (files: File[] | Array<{ name: string; text: string }>) => {
-    for (const f of files) {
-      const isFile = f instanceof File;
-      const name = f.name;
-      setQueue((q) => [...q, { name, step: 'Lecture…' }]);
-      const step = (s: string) => setQueue((q) => q.map((x) => (x.name === name ? { ...x, step: s } : x)));
-      const doc: DocumentRecord = {
-        id: uid(),
-        name,
-        size: isFile ? f.size : f.text.length,
-        mime: isFile ? f.type || 'application/octet-stream' : 'text/plain',
-        uploadedAt: new Date().toISOString(),
-        entityId: entity?.id ?? '',
-        year,
-        status: 'a_valider',
-        activityIds: [],
-        sample: !isFile,
-      };
-      try {
-        const file = isFile ? f : new File([f.text], name, { type: 'text/plain' });
-        await saveFile(doc.id, file);
-        const { text, scanned } = isFile ? await readDocumentText(f) : { text: f.text, scanned: false };
-        step(useAi && aiAvailable ? 'Lecture par Claude…' : 'Analyse…');
-        const extraction = await analyse(file, doc, text, scanned, useAi);
-        const full = { ...doc, text, extraction };
-        dispatch({ type: 'document:upsert', document: full });
-        tryAutoValidate(full, extraction);
-      } catch (err) {
-        dispatch({ type: 'document:upsert', document: { ...doc, status: 'erreur', error: err instanceof Error ? err.message : 'Lecture impossible' } });
-      } finally {
-        setQueue((q) => q.filter((x) => x.name !== name));
-      }
-    }
-  };
+  const run = (files: Parameters<typeof processFiles>[0]) =>
+    processFiles(files, { entityId: entity?.id ?? '', year, autoValidate, useAi, source: 'cabinet' });
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { a_valider: 0, valide: 0, rejete: 0, erreur: 0, tous: documents.length };
@@ -133,6 +48,7 @@ export function Documents() {
 
   const list = documents.filter((d) => filter === 'tous' || d.status === filter).slice().sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
   const open = documents.find((d) => d.id === openId);
+  const fromClient = documents.filter((d) => d.source === 'client').length;
 
   const docEmissions = (d: DocumentRecord) =>
     state.activities
@@ -142,21 +58,140 @@ export function Documents() {
         return f ? s + computeActivity(a, f, entities.find((e) => e.id === a.entityId), org).kgCO2e : s;
       }, 0);
 
+  const hintFor = (d: DocumentRecord): DocType | undefined => DOCUMENT_REQUESTS.find((r) => r.id === d.requestId)?.hint;
+
   return (
     <div className="stack">
       <PageHead
-        title="Documents"
-        intro="Déposez les factures (STEG, carburant, gaz, eau), tickets, cartes grises, fiches techniques, billets ou bordereaux. Chaque pièce est lue, classée dans le bon scope et convertie en émissions ; elle reste attachée à la donnée comme justificatif."
+        eyebrow="Traitement"
+        icon="checks"
+        title="File de vérification"
+        intro="Les pièces déposées par le client sur son portail (ou par le cabinet) sont lues et classées automatiquement. Vérifiez les extractions incertaines, corrigez si besoin, puis intégrez-les au bilan."
       />
 
       <div className="grid g4">
-        <Stat accent="main" label="Documents" value={fmt(documents.length)} sub={`${counts.valide} validés`} />
-        <Stat label="À valider" value={fmt(counts.a_valider)} sub="vérification nécessaire" />
-        <Stat label="Émissions justifiées" value={fmtMass(documents.reduce((s, d) => s + docEmissions(d), 0))} sub="issues des documents validés" />
-        <Stat label="Lecture automatique" value={aiAvailable ? 'Claude' : 'Texte'} sub={aiAvailable ? (aiImages ? 'PDF, scans et photos' : 'PDF et textes') : 'PDF avec texte, TXT, CSV'} />
+        <Stat accent="main" icon="inbox" label="Pièces reçues" value={fmt(documents.length)} sub={`${fromClient} via le portail client`} />
+        <Stat icon="clock" label="À vérifier" value={fmt(counts.a_valider)} sub="extractions incertaines" />
+        <Stat icon="checkCircle" label="Intégrées au bilan" value={fmt(counts.valide)} sub={fmtMass(documents.reduce((s, d) => s + docEmissions(d), 0))} />
+        <Stat icon="sparkles" label="Lecture automatique" value={aiAvailable ? 'Claude' : 'Texte'} sub={aiAvailable ? (aiImages ? 'PDF, scans et photos' : 'PDF et textes') : 'PDF avec texte, TXT, CSV'} />
       </div>
 
-      <Card title="Déposer des documents">
+      {open && (
+        <ReviewPanel
+          key={open.id}
+          doc={open}
+          onClose={() => setOpenId(undefined)}
+          onValidate={validate}
+          reanalyse={(file, doc, text, scanned, wantAi) => analyse({ file, doc, text, scanned, wantAi, hintType: hintFor(doc) })}
+          aiAvailable={aiAvailable && useAi}
+        />
+      )}
+
+      <Card
+        icon="file"
+        title="Pièces"
+        actions={
+          <Tabs<Filter>
+            value={filter}
+            onChange={setFilter}
+            tabs={[
+              ['a_valider', `À vérifier (${counts.a_valider})`],
+              ['valide', `Intégrées (${counts.valide})`],
+              ['rejete', `Rejetées (${counts.rejete})`],
+              ['erreur', `Erreurs (${counts.erreur})`],
+              ['tous', `Toutes (${counts.tous})`],
+            ]}
+          />
+        }
+      >
+        {list.length === 0 ? (
+          <Empty icon={documents.length === 0 ? 'inbox' : 'checkCircle'}>
+            {documents.length === 0 ? 'Aucune pièce reçue. Le client dépose ses documents depuis son portail, ou ajoutez-les ci-dessous.' : filter === 'a_valider' ? 'Rien à vérifier : toutes les pièces sont traitées.' : 'Aucune pièce dans cette catégorie.'}
+          </Empty>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Classement</th>
+                  <th className="num">Quantité lue</th>
+                  <th className="num">Émissions</th>
+                  <th>Statut</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((d) => {
+                  const e = d.extraction;
+                  const first = e?.lines[0];
+                  const f = first?.factorId ? factorById.get(first.factorId) : undefined;
+                  return (
+                    <tr key={d.id}>
+                      <td style={{ minWidth: 240 }}>
+                        <div className="doc-cell">
+                          <span className="doc-icon"><Icon name={e ? DOC_TYPE_ICON[e.docType] : 'file'} size={17} /></span>
+                          <div style={{ minWidth: 0 }}>
+                            <button className="linklike" onClick={() => setOpenId(d.id)}>{d.name}</button>
+                            <div className="small muted">
+                              {[e ? DOC_TYPE_LABELS[e.docType] : undefined, e?.supplier, e?.documentNumber && `n° ${e.documentNumber}`, e?.periodStart && e?.periodEnd ? `${e.periodStart} → ${e.periodEnd}` : e?.date].filter(Boolean).join(' · ')}
+                            </div>
+                            <div className="row small" style={{ marginTop: 3, gap: 6 }}>
+                              <span className={`badge ${d.source === 'client' ? 'info' : 'neutral'}`}>{d.source === 'client' ? 'Portail client' : 'Cabinet'}</span>
+                              {e && <span className="badge neutral">{e.method === 'ia' ? 'lu par Claude' : e.method === 'texte' ? 'extraction automatique' : 'saisie manuelle'}</span>}
+                              {d.sample && <span className="badge neutral">exemple</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        {f ? (
+                          <>
+                            <ScopeBadge scope={getCategory(f.category).scope} />
+                            <div className="small muted">{getCategory(f.category).label}</div>
+                          </>
+                        ) : e?.vehicle?.plate ? (
+                          <span className="badge neutral"><Icon name="car" size={13} /> {e.vehicle.plate}</span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="num">
+                        {first?.quantity !== undefined ? `${fmt(first.quantity)} ${first.unit ?? f?.unit ?? ''}` : '—'}
+                        {e && e.lines.length > 1 && <div className="small muted">+ {e.lines.length - 1} ligne(s)</div>}
+                      </td>
+                      <td className="num">{d.status === 'valide' ? fmtMass(docEmissions(d)) : '—'}</td>
+                      <td>
+                        <span className={`badge ${STATUS_BADGE[d.status]}`}>{STATUS_LABEL[d.status]}</span>
+                        {e && d.status === 'a_valider' && <div className="small muted">confiance {Math.round(e.confidence * 100)} %</div>}
+                      </td>
+                      <td className="nowrap">
+                        <button className={d.status === 'a_valider' ? 'primary' : ''} onClick={() => setOpenId(d.id)}>
+                          <Icon name={d.status === 'a_valider' ? 'checks' : 'eye'} size={15} />
+                          {d.status === 'a_valider' ? 'Vérifier' : 'Ouvrir'}
+                        </button>
+                        <ConfirmButton
+                          className="ghost danger icon-btn"
+                          title="Supprimer"
+                          question="Supprimer la pièce et ses données ?"
+                          onConfirm={() => {
+                            deleteFile(d.id);
+                            dispatch({ type: 'document:delete', id: d.id });
+                          }}
+                        >
+                          <Icon name="trash" size={16} />
+                        </ConfirmButton>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <Card icon="upload" title="Ajouter des pièces (cabinet)">
         <div className="form-grid" style={{ marginBottom: 12 }}>
           <Field label="Site / entité">
             <select id="doc-entity" value={entityId} onChange={(e) => setEntityId(e.target.value)}>
@@ -170,7 +205,7 @@ export function Documents() {
           </Field>
           <label className="check">
             <input id="doc-auto" type="checkbox" checked={autoValidate} onChange={(e) => setAutoValidate(e.target.checked)} />
-            Valider automatiquement les documents sûrs (confiance ≥ {AUTO_THRESHOLD * 100} %)
+            Intégrer automatiquement les extractions sûres (confiance ≥ {AUTO_THRESHOLD * 100} %)
           </label>
           {aiAvailable && (
             <label className="check">
@@ -189,14 +224,15 @@ export function Documents() {
           onDrop={(e) => {
             e.preventDefault();
             setDrag(false);
-            processFiles([...e.dataTransfer.files]);
+            run([...e.dataTransfer.files]);
           }}
           onClick={() => inputRef.current?.click()}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && inputRef.current?.click()}
         >
-          <strong>Glissez vos fichiers ici ou cliquez pour les choisir</strong>
+          <Icon name="upload" size={26} />
+          <strong>Glissez les fichiers ici ou cliquez pour les choisir</strong>
           <span className="small muted">PDF, images (JPG, PNG), TXT, CSV — plusieurs fichiers à la fois</span>
           <input
             ref={inputRef}
@@ -208,124 +244,24 @@ export function Documents() {
             onChange={(e) => {
               const files = [...(e.target.files ?? [])];
               e.target.value = '';
-              processFiles(files);
+              run(files);
             }}
           />
         </div>
         <div className="row" style={{ marginTop: 10 }}>
-          <button onClick={() => processFiles(SAMPLE_DOCUMENTS)}>Charger 9 documents d’exemple</button>
+          <button onClick={() => run(SAMPLE_DOCUMENTS)}>
+            <Icon name="sparkles" size={15} /> Charger 9 documents d’exemple
+          </button>
           <span className="small muted">Facture STEG, ticket Agil, carte grise, fiche technique, SONEDE, billet Tunisair, climatisation, déchets (contenu fictif).</span>
         </div>
-        {!aiAvailable && (
-          <p className="small muted" style={{ marginTop: 8 }}>
-            Sur cet appareil, le texte des PDF est lu directement. Les scans et photos sont lus automatiquement lorsque la plateforme est ouverte sur claude.ai ; ici, leurs valeurs sont à saisir.
-          </p>
-        )}
         {queue.length > 0 && (
           <ul className="clean small" style={{ marginTop: 10 }}>
             {queue.map((q) => (
-              <li key={q.name}>
+              <li key={q.key}>
                 <span className="spinner" aria-hidden /> {q.name} — {q.step}
               </li>
             ))}
           </ul>
-        )}
-      </Card>
-
-      {open && <ReviewPanel key={open.id} doc={open} onClose={() => setOpenId(undefined)} onValidate={validate} reanalyse={analyse} country={country} aiAvailable={aiAvailable && useAi} />}
-
-      <Card
-        title="Pièces"
-        actions={
-          <Tabs<Filter>
-            value={filter}
-            onChange={setFilter}
-            tabs={[
-              ['a_valider', `À valider (${counts.a_valider})`],
-              ['valide', `Validés (${counts.valide})`],
-              ['rejete', `Rejetés (${counts.rejete})`],
-              ['erreur', `Erreurs (${counts.erreur})`],
-              ['tous', `Tous (${counts.tous})`],
-            ]}
-          />
-        }
-      >
-        {list.length === 0 ? (
-          <p className="empty">{documents.length === 0 ? 'Aucun document. Déposez vos premières factures ci-dessus ou chargez les exemples.' : 'Aucun document dans cette catégorie.'}</p>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Document</th>
-                  <th>Type</th>
-                  <th>Classement</th>
-                  <th className="num">Quantité lue</th>
-                  <th className="num">Émissions</th>
-                  <th>Statut</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((d) => {
-                  const e = d.extraction;
-                  const first = e?.lines[0];
-                  const f = first?.factorId ? factorById.get(first.factorId) : undefined;
-                  return (
-                    <tr key={d.id}>
-                      <td style={{ minWidth: 200 }}>
-                        <button className="linklike" onClick={() => setOpenId(d.id)}>{d.name}</button>
-                        <div className="small muted">
-                          {[e?.supplier, e?.documentNumber && `n° ${e.documentNumber}`, e?.periodStart && e?.periodEnd ? `${e.periodStart} → ${e.periodEnd}` : e?.date, d.sample && 'exemple'].filter(Boolean).join(' · ')}
-                        </div>
-                      </td>
-                      <td className="small">
-                        {e ? DOC_TYPE_LABELS[e.docType] : '—'}
-                        {e && <div className="muted">{e.method === 'ia' ? 'lu par Claude' : e.method === 'texte' ? 'analyse du texte' : 'saisie manuelle'}</div>}
-                      </td>
-                      <td>
-                        {f ? (
-                          <>
-                            <ScopeBadge scope={getCategory(f.category).scope} />
-                            <div className="small muted">{getCategory(f.category).label}</div>
-                          </>
-                        ) : e?.vehicle?.plate ? (
-                          <span className="badge neutral">Flotte · {e.vehicle.plate}</span>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td className="num">
-                        {first?.quantity !== undefined ? `${fmt(first.quantity)} ${first.unit ?? f?.unit ?? ''}` : '—'}
-                        {e && e.lines.length > 1 && <div className="small muted">+ {e.lines.length - 1} ligne(s)</div>}
-                      </td>
-                      <td className="num">{d.status === 'valide' ? fmtMass(docEmissions(d)) : '—'}</td>
-                      <td>
-                        <span className={`badge ${STATUS_BADGE[d.status]}`}>{STATUS_LABEL[d.status]}</span>
-                        {e && d.status === 'a_valider' && <div className="small muted">confiance {Math.round(e.confidence * 100)} %</div>}
-                      </td>
-                      <td className="nowrap">
-                        <button className="ghost" onClick={() => setOpenId(d.id)} title="Vérifier">
-                          {d.status === 'a_valider' ? 'Vérifier' : 'Ouvrir'}
-                        </button>
-                        <ConfirmButton
-                          className="ghost danger"
-                          title="Supprimer"
-                          question="Supprimer le document et ses données ?"
-                          onConfirm={() => {
-                            deleteFile(d.id);
-                            dispatch({ type: 'document:delete', id: d.id });
-                          }}
-                        >
-                          🗑
-                        </ConfirmButton>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         )}
       </Card>
     </div>
@@ -345,7 +281,6 @@ function ReviewPanel({
   onClose: () => void;
   onValidate: (doc: DocumentRecord, e: Extraction) => void;
   reanalyse: (file: File | undefined, doc: DocumentRecord, text: string, scanned: boolean, wantAi: boolean) => Promise<Extraction>;
-  country: string;
   aiAvailable: boolean;
 }) {
   const { state, dispatch, factors, factorById } = useStore();

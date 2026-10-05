@@ -35,6 +35,8 @@ export function Tracking() {
   return (
     <div className="stack">
       <PageHead
+        eyebrow="Bilan carbone"
+        icon="gauge"
         title="Suivi des consommations"
         intro="Consommé, restant et projection de fin d’année pour chaque budget, mis à jour dès qu’un document est validé ou qu’une donnée est saisie."
         actions={
@@ -53,7 +55,7 @@ export function Tracking() {
         <Stat label="Données datées" value={`${dated} / ${inv.results.length}`} sub="les autres sont réparties sur l’année" />
       </div>
 
-      <Card title="Budgets">
+      <Card icon="gauge" title="Budgets">
         {budgets.length === 0 && <p className="muted">Aucun budget pour {year}. Ajoutez-en un ci-dessous (ex. kWh d’électricité, litres de gazole, t CO2e, dépenses).</p>}
         <div className="budgets">
           {budgets.map((b) => {

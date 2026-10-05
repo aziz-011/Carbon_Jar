@@ -61,7 +61,7 @@ export function Guide() {
 
   return (
     <div className="stack">
-      <PageHead title="Guide du bilan carbone" intro="Les notions, règles et formules du GHG Protocol, de la CSRD et de l’ACV, extraites des documents de référence." />
+      <PageHead eyebrow="Ressources" icon="book" title="Guide du bilan carbone" intro="Les notions, règles et formules du GHG Protocol, de la CSRD et de l’ACV, extraites des documents de référence." />
       <div className="guide">
         <nav>
           <Link to="/guide" className={!section ? 'active' : ''}>Vue d’ensemble</Link>
@@ -107,12 +107,12 @@ export function Guide() {
                   </Link>
                 ))}
               </div>
-              <Card title="Formules essentielles">
+              <Card icon="calculator" title="Formules essentielles">
                 {KNOWLEDGE.flatMap((s) => s.blocks.filter((b): b is Extract<Block, { kind: 'formula' }> => b.kind === 'formula')).map((b, i) => (
                   <Formula key={i} label={b.label} formula={b.formula} note={b.note} />
                 ))}
               </Card>
-              <Card title="Glossaire">
+              <Card icon="book" title="Glossaire">
                 <table>
                   <tbody>
                     {GLOSSARY.map(([t, d]) => (
